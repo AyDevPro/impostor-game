@@ -1,20 +1,11 @@
 import { Request } from 'express';
 
-// User types
-export interface User {
+// Player types (sessions temporaires)
+export interface Player {
   id: number;
   username: string;
-  email: string;
-  password_hash?: string;
+  session_id: string;
   created_at: string;
-  games_played: number;
-  games_won: number;
-  total_points: number;
-}
-
-export interface AuthRequest extends Request {
-  userId?: number;
-  user?: User;
 }
 
 // Game types
@@ -35,7 +26,7 @@ export interface Game {
 export interface GamePlayer {
   id: number;
   game_id: number;
-  user_id: number;
+  player_id: number;
   role: string | null;
   is_ready: number;
   points_earned: number;
@@ -43,7 +34,7 @@ export interface GamePlayer {
 }
 
 // Role types
-export type RoleId = 'imposteur' | 'droide' | 'serpentin' | 'double_face' | 'super_heros';
+export type RoleId = 'imposteur' | 'droide' | 'serpentin' | 'double_face' | 'super_heros' | 'romeo' | 'escroc';
 
 export interface Role {
   id: RoleId;
@@ -54,12 +45,13 @@ export interface Role {
   points: number;
 }
 
-// Vote types
-export interface Vote {
+// Role Guess types
+export interface RoleGuess {
   id: number;
   game_id: number;
-  voter_id: number;
+  guesser_id: number;
   target_id: number;
+  guessed_role: string;
   created_at: string;
 }
 
@@ -73,6 +65,20 @@ export interface Message {
   created_at: string;
 }
 
+// Player Stats types
+export interface PlayerStats {
+  id: number;
+  game_id: number;
+  player_id: number;
+  victory: number;
+  kills: number;
+  deaths: number;
+  assists: number;
+  damage: number;
+  cs: number;
+  created_at: string;
+}
+
 // Socket types
 export interface ServerToClientEvents {
   'lobby:player-joined': (player: GamePlayer & { username: string }) => void;
@@ -82,10 +88,15 @@ export interface ServerToClientEvents {
   'chat:new-message': (message: Message) => void;
   'game:started': (data: { role: Role; phaseEndTime: string }) => void;
   'game:phase-change': (data: { phase: GamePhase; endTime?: string }) => void;
-  'vote:received': (data: { voterId: number }) => void;
-  'vote:results': (data: { votes: VoteResult[]; points: PlayerPoints[] }) => void;
+  'stats:submitted': (data: { playerId: number; total: number; submitted: number }) => void;
+  'stats:all-submitted': () => void;
+  'guesses:received': (data: { guesserId: number }) => void;
   'game:ended': (results: GameResult) => void;
   'error': (data: { message: string }) => void;
+  'session:created': (data: { sessionId: string }) => void;
+  'role:double-face-revealed': (data: { playerId: number; username: string }) => void;
+  'role:droide-mission': (data: { mission: string }) => void;
+  'role:action-recorded': (data: { playerId: number; actionType: string }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -95,14 +106,38 @@ export interface ClientToServerEvents {
   'lobby:unready': (data: { gameCode: string }) => void;
   'chat:message': (data: { gameCode: string; content: string }) => void;
   'game:start': (data: { gameCode: string }) => void;
-  'vote:cast': (data: { gameCode: string; targetId: number }) => void;
+  'stats:submit': (data: {
+    gameCode: string;
+    stats: {
+      victory: boolean;
+      kills: number;
+      deaths: number;
+      assists: number;
+      damage: number;
+      cs: number;
+    }
+  }) => void;
+  'guesses:submit': (data: {
+    gameCode: string;
+    guesses: { targetId: number; guessedRole: RoleId }[]
+  }) => void;
+  'role:reveal-double-face': (data: { gameCode: string }) => void;
+  'role:complete-droide-mission': (data: { gameCode: string; missionId: string }) => void;
 }
 
-export interface VoteResult {
-  oderId: number;
-  targetId: number;
-  voterUsername: string;
-  targetUsername: string;
+export interface GuessResult {
+  guesserId: number;
+  guesserUsername: string;
+  guesses: {
+    targetId: number;
+    targetUsername: string;
+    guessedRole: string;
+    actualRole: string;
+    isCorrect: boolean;
+  }[];
+  correctGuesses: number;
+  totalGuesses: number;
+  accuracy: number;
 }
 
 export interface PlayerPoints {
@@ -110,12 +145,17 @@ export interface PlayerPoints {
   username: string;
   role: string;
   points: number;
+  breakdown?: {
+    base: number;
+    guessBonus: number;
+    statsBonus: number;
+  };
 }
 
 export interface GameResult {
   players: (GamePlayer & { username: string; role: string })[];
-  votes: VoteResult[];
+  guessResults: GuessResult[];
   points: PlayerPoints[];
   impostorId: number;
-  impostorCaught: boolean;
+  playerStats?: PlayerStats[];
 }

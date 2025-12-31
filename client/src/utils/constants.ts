@@ -1,4 +1,4 @@
-import { Role, RoleId } from '../types/index.js';
+import { Role, RoleId } from '../types';
 
 export const ROLES: Record<RoleId, Role> = {
   imposteur: {
@@ -57,12 +57,4 @@ export const ROLES: Record<RoleId, Role> = {
     color: '#FFD700',
     points: 100
   }
-};
-
-export const GAME_CONFIG = {
-  MIN_PLAYERS: 5,
-  MAX_PLAYERS: 10,
-  DEBATE_DURATION_MS: 5 * 60 * 1000, // 5 minutes
-  VOTE_DURATION_MS: 60 * 1000, // 1 minute
-  CODE_LENGTH: 6
 };

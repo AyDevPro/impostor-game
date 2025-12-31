@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import { useGame } from '../hooks/useGame';
 import { Button } from '../components/ui/Button';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
@@ -9,7 +10,8 @@ import { Chat } from '../components/Chat';
 export function Lobby() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { connect, isConnected } = useSocket();
+  const [myPlayerId, setMyPlayerId] = useState<number | null>(null);
   const {
     game,
     players,
@@ -21,6 +23,43 @@ export function Lobby() {
     startGame,
     leaveGame
   } = useGame(code);
+
+  // Connecter la socket avec le username stocké
+  useEffect(() => {
+    const username = localStorage.getItem('username');
+    const sessionId = localStorage.getItem('sessionId');
+
+    if (!username) {
+      // Rediriger vers la page d'accueil si pas de pseudo
+      navigate('/');
+      return;
+    }
+
+    if (!isConnected) {
+      connect(username, sessionId || undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected]);
+
+  // Trouver l'ID du joueur actuel basé sur le sessionId
+  useEffect(() => {
+    const sessionId = localStorage.getItem('sessionId');
+    if (sessionId && players.length > 0) {
+      // Pour simplifier, on va utiliser le username stocké pour trouver le joueur
+      const username = localStorage.getItem('username');
+      const myPlayer = players.find(p => p.username === username);
+      if (myPlayer) {
+        setMyPlayerId(myPlayer.player_id);
+      }
+    }
+  }, [players]);
+
+  // Rediriger vers la page de révélation du rôle si la partie a commencé
+  useEffect(() => {
+    if (game && game.status !== 'lobby') {
+      navigate(`/game/${code}/role`);
+    }
+  }, [game, code, navigate]);
 
   if (isLoading) {
     return (
@@ -48,14 +87,13 @@ export function Lobby() {
     );
   }
 
-  // Rediriger vers la page de jeu si la partie a commencé
+  // Ne rien afficher si on n'est plus en lobby (la redirection se fait dans le useEffect)
   if (game.status !== 'lobby') {
-    navigate(`/game/${code}`);
     return null;
   }
 
-  const isHost = game.host_id === user?.id;
-  const myPlayer = players.find(p => p.user_id === user?.id);
+  const isHost = game.host_id === myPlayerId;
+  const myPlayer = players.find(p => p.player_id === myPlayerId);
   const allReady = players.length >= 5 && players.every(p => p.is_ready);
   const canStart = isHost && allReady;
 
@@ -121,6 +159,7 @@ export function Lobby() {
                 players={players}
                 showReady={true}
                 hostId={game.host_id}
+                myPlayerId={myPlayerId || undefined}
               />
             </CardContent>
           </Card>
@@ -155,7 +194,7 @@ export function Lobby() {
             <h2 className="text-lg font-semibold text-white">Chat du lobby</h2>
           </CardHeader>
           <div className="flex-1 overflow-hidden">
-            <Chat messages={messages} onSend={sendMessage} />
+            <Chat messages={messages} onSend={sendMessage} myPlayerId={myPlayerId || undefined} />
           </div>
         </Card>
       </main>

@@ -1,31 +1,35 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { useAuth } from './AuthContext';
 
 interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
+  connect: (username: string, sessionId?: string) => void;
+  disconnect: () => void;
 }
 
-const SocketContext = createContext<SocketContextType>({ socket: null, isConnected: false });
+const SocketContext = createContext<SocketContextType>({
+  socket: null,
+  isConnected: false,
+  connect: () => {},
+  disconnect: () => {}
+});
 
 export function SocketProvider({ children }: { children: ReactNode }) {
-  const { token } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  useEffect(() => {
-    if (!token) {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-        setIsConnected(false);
-      }
-      return;
+  const connect = (username: string, sessionId?: string) => {
+    // Déconnecter l'ancienne socket si elle existe
+    if (socket) {
+      socket.disconnect();
     }
 
     const newSocket = io('/', {
-      auth: { token },
+      auth: {
+        username,
+        sessionId: sessionId || localStorage.getItem('sessionId')
+      },
       transports: ['websocket', 'polling']
     });
 
@@ -43,15 +47,33 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       console.error('Socket error:', data.message);
     });
 
-    setSocket(newSocket);
+    // Recevoir et stocker le sessionId
+    newSocket.on('session:created', (data: { sessionId: string }) => {
+      localStorage.setItem('sessionId', data.sessionId);
+    });
 
+    setSocket(newSocket);
+  };
+
+  const disconnect = () => {
+    if (socket) {
+      socket.disconnect();
+      setSocket(null);
+      setIsConnected(false);
+    }
+  };
+
+  // Nettoyer lors du démontage
+  useEffect(() => {
     return () => {
-      newSocket.disconnect();
+      if (socket) {
+        socket.disconnect();
+      }
     };
-  }, [token]);
+  }, [socket]);
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected }}>
+    <SocketContext.Provider value={{ socket, isConnected, connect, disconnect }}>
       {children}
     </SocketContext.Provider>
   );

@@ -1,5 +1,4 @@
 import { GamePlayer } from '../types';
-import { useAuth } from '../context/AuthContext';
 
 interface PlayerListProps {
   players: GamePlayer[];
@@ -8,6 +7,7 @@ interface PlayerListProps {
   onVote?: (playerId: number) => void;
   votedFor?: number;
   hostId?: number;
+  myPlayerId?: number;
 }
 
 const roleColors: Record<string, string> = {
@@ -24,21 +24,21 @@ export function PlayerList({
   showRole = false,
   onVote,
   votedFor,
-  hostId
+  hostId,
+  myPlayerId
 }: PlayerListProps) {
-  const { user } = useAuth();
 
   return (
     <div className="space-y-2">
       {players.map((player) => (
         <div
-          key={player.user_id}
+          key={player.player_id}
           className={`flex items-center justify-between p-3 rounded-lg bg-gray-700/50 ${
-            onVote && player.user_id !== user?.id ? 'cursor-pointer hover:bg-gray-700' : ''
-          } ${votedFor === player.user_id ? 'ring-2 ring-primary-500' : ''}`}
+            onVote && player.player_id !== myPlayerId ? 'cursor-pointer hover:bg-gray-700' : ''
+          } ${votedFor === player.player_id ? 'ring-2 ring-primary-500' : ''}`}
           onClick={() => {
-            if (onVote && player.user_id !== user?.id) {
-              onVote(player.user_id);
+            if (onVote && player.player_id !== myPlayerId) {
+              onVote(player.player_id);
             }
           }}
         >
@@ -53,12 +53,12 @@ export function PlayerList({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-medium text-white">{player.username}</span>
-                {player.user_id === hostId && (
+                {player.player_id === hostId && (
                   <span className="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded">
                     Hote
                   </span>
                 )}
-                {player.user_id === user?.id && (
+                {player.player_id === myPlayerId && (
                   <span className="text-xs bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded">
                     Toi
                   </span>
@@ -87,19 +87,19 @@ export function PlayerList({
               </span>
             )}
 
-            {onVote && player.user_id !== user?.id && (
+            {onVote && player.player_id !== myPlayerId && (
               <button
                 className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                  votedFor === player.user_id
+                  votedFor === player.player_id
                     ? 'bg-red-600 text-white'
                     : 'bg-gray-600 text-gray-300 hover:bg-red-600 hover:text-white'
                 }`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onVote(player.user_id);
+                  onVote(player.player_id);
                 }}
               >
-                {votedFor === player.user_id ? 'Vote !' : 'Voter'}
+                {votedFor === player.player_id ? 'Vote !' : 'Voter'}
               </button>
             )}
           </div>

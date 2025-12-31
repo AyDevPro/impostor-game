@@ -1,16 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { Message } from '../types';
-import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/Button';
 
 interface ChatProps {
   messages: Message[];
   onSend: (content: string) => void;
   disabled?: boolean;
+  myPlayerId?: number;
 }
 
-export function Chat({ messages, onSend, disabled = false }: ChatProps) {
-  const { user } = useAuth();
+export function Chat({ messages, onSend, disabled = false, myPlayerId }: ChatProps) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -41,7 +40,7 @@ export function Chat({ messages, onSend, disabled = false }: ChatProps) {
           </div>
         ) : (
           messages.map((message) => {
-            const isOwn = message.user_id === user?.id;
+            const isOwn = message.player_id === myPlayerId;
             return (
               <div
                 key={message.id}

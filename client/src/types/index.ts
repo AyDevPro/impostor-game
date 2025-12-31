@@ -1,12 +1,9 @@
-// User types
-export interface User {
+// Player types (sessions temporaires)
+export interface Player {
   id: number;
   username: string;
-  email: string;
+  session_id: string;
   created_at: string;
-  games_played: number;
-  games_won: number;
-  total_points: number;
 }
 
 // Game types
@@ -27,7 +24,7 @@ export interface Game {
 export interface GamePlayer {
   id: number;
   game_id: number;
-  user_id: number;
+  player_id: number;
   role: string | null;
   is_ready: number;
   points_earned: number;
@@ -35,7 +32,7 @@ export interface GamePlayer {
 }
 
 // Role types
-export type RoleId = 'imposteur' | 'droide' | 'serpentin' | 'double_face' | 'super_heros';
+export type RoleId = 'imposteur' | 'droide' | 'serpentin' | 'double_face' | 'super_heros' | 'romeo' | 'escroc';
 
 export interface Role {
   id: RoleId;
@@ -50,18 +47,31 @@ export interface Role {
 export interface Message {
   id: number;
   game_id: number;
-  user_id: number;
+  player_id: number;
   username: string;
   content: string;
   created_at: string;
 }
 
-// Vote types
-export interface VoteResult {
-  oderId: number;
+// Role Guess types
+export interface RoleGuessInput {
   targetId: number;
-  voterUsername: string;
-  targetUsername: string;
+  guessedRole: RoleId;
+}
+
+export interface GuessResult {
+  guesserId: number;
+  guesserUsername: string;
+  guesses: {
+    targetId: number;
+    targetUsername: string;
+    guessedRole: string;
+    actualRole: string;
+    isCorrect: boolean;
+  }[];
+  correctGuesses: number;
+  totalGuesses: number;
+  accuracy: number;
 }
 
 export interface PlayerPoints {
@@ -69,31 +79,42 @@ export interface PlayerPoints {
   username: string;
   role: string;
   points: number;
+  breakdown?: {
+    base: number;
+    guessBonus: number;
+    statsBonus: number;
+  };
 }
 
 export interface GameResult {
   players: (GamePlayer & { role: string })[];
-  votes: VoteResult[];
+  guessResults: GuessResult[];
   points: PlayerPoints[];
   impostorId: number;
-  impostorCaught: boolean;
+  playerStats?: Array<{
+    player_id: number;
+    victory: number;
+    kills: number;
+    deaths: number;
+    assists: number;
+    damage: number;
+    cs: number;
+  }>;
 }
 
-// Auth types
-export interface AuthState {
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+// Player Stats types
+export interface PlayerStats {
+  victory: boolean;
+  kills: number;
+  deaths: number;
+  assists: number;
+  damage: number;
+  cs: number;
 }
 
-// Leaderboard types
-export interface LeaderboardEntry {
-  id: number;
-  username: string;
-  total_points: number;
-  games_played: number;
-  games_won: number;
+// Droide Mission types
+export interface DroideMission {
+  id: string;
+  description: string;
+  difficulty: 'easy' | 'medium' | 'hard';
 }

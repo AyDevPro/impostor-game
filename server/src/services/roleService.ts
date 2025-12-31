@@ -1,5 +1,6 @@
-import { RoleId, Role } from '../types/index.js';
+import { RoleId, Role, PlayerStats } from '../types/index.js';
 import { ROLES } from '../utils/constants.js';
+import { statsBonusService, RoleActionBonus } from './statsBonusService.js';
 
 export class RoleService {
   // Mélange aléatoire d'un tableau (Fisher-Yates)
@@ -38,49 +39,57 @@ export class RoleService {
     return ROLES[roleId];
   }
 
-  // Calculer les points pour chaque joueur
+  // Calculer les points pour chaque joueur basé sur les devinettes et stats LoL
   calculatePoints(
     players: { userId: number; role: RoleId }[],
-    votes: { voterId: number; targetId: number }[]
-  ): Map<number, number> {
-    const points = new Map<number, number>();
-
-    // Trouver l'imposteur
-    const impostor = players.find(p => p.role === 'imposteur');
-    if (!impostor) {
-      // Pas d'imposteur, tout le monde gagne les points de base
-      players.forEach(p => points.set(p.userId, 25));
-      return points;
-    }
-
-    // Compter les votes contre l'imposteur
-    const votesAgainstImpostor = votes.filter(v => v.targetId === impostor.userId).length;
-    const totalVotes = votes.length;
-    const impostorCaught = votesAgainstImpostor > totalVotes / 2;
+    guessAccuracy: Map<number, { correct: number; total: number }>,
+    playerStats: Map<number, PlayerStats>,
+    roleActions?: Map<number, RoleActionBonus>
+  ): Map<number, { total: number; base: number; guessBonus: number; statsBonus: number }> {
+    const points = new Map<number, { total: number; base: number; guessBonus: number; statsBonus: number }>();
 
     for (const player of players) {
       const role = ROLES[player.role];
-      let playerPoints = 0;
+      const basePoints = role.points;
 
-      if (player.role === 'imposteur') {
-        // L'imposteur gagne ses points s'il n'est pas attrapé
-        playerPoints = impostorCaught ? 0 : role.points;
-      } else {
-        // Les autres gagnent s'ils ont voté pour l'imposteur
-        const votedForImpostor = votes.some(
-          v => v.voterId === player.userId && v.targetId === impostor.userId
-        );
+      // Calculer le bonus de devinettes
+      const accuracy = guessAccuracy.get(player.userId);
+      let guessBonus = 0;
 
-        if (votedForImpostor && impostorCaught) {
-          playerPoints = role.points;
-        } else if (votedForImpostor) {
-          playerPoints = Math.floor(role.points / 2);
-        } else {
-          playerPoints = 10; // Points de participation
+      if (accuracy && accuracy.total > 0) {
+        const accuracyPercent = accuracy.correct / accuracy.total;
+
+        // Bonus basé sur la précision :
+        // - 100% correct : +50 points
+        // - 80% correct : +40 points
+        // - 60% correct : +30 points
+        // - 40% correct : +20 points
+        // - 20% correct : +10 points
+        // - 0% correct : 0 points
+        guessBonus = Math.floor(accuracyPercent * 50);
+
+        // Bonus supplémentaire pour avoir tout deviné correctement
+        if (accuracy.correct === accuracy.total) {
+          guessBonus += 20;
         }
       }
 
-      points.set(player.userId, playerPoints);
+      // Calculer le bonus de stats LoL avec actions spéciales
+      let statsBonus = 0;
+      const stats = playerStats.get(player.userId);
+      if (stats) {
+        const actions = roleActions?.get(player.userId);
+        statsBonus = statsBonusService.calculateStatsBonus(player.role, stats, actions);
+      }
+
+      const totalPoints = basePoints + guessBonus + statsBonus;
+
+      points.set(player.userId, {
+        total: totalPoints,
+        base: basePoints,
+        guessBonus,
+        statsBonus
+      });
     }
 
     return points;

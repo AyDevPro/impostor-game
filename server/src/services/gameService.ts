@@ -28,14 +28,14 @@ export class GameService {
 
     // Ajouter l'hôte comme joueur
     db.prepare(
-      'INSERT INTO game_players (game_id, user_id) VALUES (?, ?)'
+      'INSERT INTO game_players (game_id, player_id) VALUES (?, ?)'
     ).run(result.lastInsertRowid, hostId);
 
     return db.prepare('SELECT * FROM games WHERE id = ?').get(result.lastInsertRowid) as Game;
   }
 
   // Rejoindre une partie
-  joinGame(code: string, userId: number): Game {
+  joinGame(code: string, playerId: number): Game {
     const game = db.prepare('SELECT * FROM games WHERE code = ?').get(code) as Game | undefined;
 
     if (!game) {
@@ -48,8 +48,8 @@ export class GameService {
 
     // Vérifier si le joueur est déjà dans la partie
     const existing = db.prepare(
-      'SELECT id FROM game_players WHERE game_id = ? AND user_id = ?'
-    ).get(game.id, userId);
+      'SELECT id FROM game_players WHERE game_id = ? AND player_id = ?'
+    ).get(game.id, playerId);
 
     if (existing) {
       return game; // Déjà dans la partie
@@ -66,8 +66,8 @@ export class GameService {
 
     // Ajouter le joueur
     db.prepare(
-      'INSERT INTO game_players (game_id, user_id) VALUES (?, ?)'
-    ).run(game.id, userId);
+      'INSERT INTO game_players (game_id, player_id) VALUES (?, ?)'
+    ).run(game.id, playerId);
 
     return game;
   }
@@ -80,18 +80,18 @@ export class GameService {
   // Obtenir les joueurs d'une partie
   getGamePlayers(gameId: number): (GamePlayer & { username: string })[] {
     return db.prepare(`
-      SELECT gp.*, u.username
+      SELECT gp.*, p.username
       FROM game_players gp
-      JOIN users u ON gp.user_id = u.id
+      JOIN players p ON gp.player_id = p.id
       WHERE gp.game_id = ?
     `).all(gameId) as (GamePlayer & { username: string })[];
   }
 
   // Toggle ready status
-  toggleReady(gameId: number, userId: number): boolean {
+  toggleReady(gameId: number, playerId: number): boolean {
     const player = db.prepare(
-      'SELECT is_ready FROM game_players WHERE game_id = ? AND user_id = ?'
-    ).get(gameId, userId) as { is_ready: number } | undefined;
+      'SELECT is_ready FROM game_players WHERE game_id = ? AND player_id = ?'
+    ).get(gameId, playerId) as { is_ready: number } | undefined;
 
     if (!player) {
       throw new Error('Joueur non trouve dans cette partie');
@@ -99,8 +99,8 @@ export class GameService {
 
     const newStatus = player.is_ready ? 0 : 1;
     db.prepare(
-      'UPDATE game_players SET is_ready = ? WHERE game_id = ? AND user_id = ?'
-    ).run(newStatus, gameId, userId);
+      'UPDATE game_players SET is_ready = ? WHERE game_id = ? AND player_id = ?'
+    ).run(newStatus, gameId, playerId);
 
     return newStatus === 1;
   }
@@ -128,12 +128,23 @@ export class GameService {
 
     // Attribuer les rôles
     const updateRole = db.prepare(
-      'UPDATE game_players SET role = ? WHERE game_id = ? AND user_id = ?'
+      'UPDATE game_players SET role = ? WHERE game_id = ? AND player_id = ?'
     );
 
-    for (const [userId, role] of roleAssignments) {
-      updateRole.run(role, gameId, userId);
+    for (const [playerId, role] of roleAssignments) {
+      updateRole.run(role, gameId, playerId);
     }
+  }
+
+  // Passer à la phase de débat
+  startDebatePhase(gameId: number): void {
+    const phaseEndTime = new Date(Date.now() + GAME_CONFIG.DEBATE_DURATION_MS).toISOString();
+
+    db.prepare(`
+      UPDATE games
+      SET current_phase = 'debate', phase_end_time = ?
+      WHERE id = ?
+    `).run(phaseEndTime, gameId);
   }
 
   // Passer à la phase de vote
@@ -189,28 +200,21 @@ export class GameService {
       WHERE id = ?
     `).run(gameId);
 
-    // Mettre à jour les points des joueurs
+    // Mettre à jour les points des joueurs dans la partie
     const updatePoints = db.prepare(`
-      UPDATE game_players SET points_earned = ? WHERE game_id = ? AND user_id = ?
-    `);
-    const updateUserStats = db.prepare(`
-      UPDATE users SET
-        games_played = games_played + 1,
-        total_points = total_points + ?
-      WHERE id = ?
+      UPDATE game_players SET points_earned = ? WHERE game_id = ? AND player_id = ?
     `);
 
-    for (const [userId, points] of pointsMap) {
-      updatePoints.run(points, gameId, userId);
-      updateUserStats.run(points, userId);
+    for (const [playerId, points] of pointsMap) {
+      updatePoints.run(points, gameId, playerId);
     }
   }
 
   // Quitter une partie
-  leaveGame(gameId: number, userId: number): void {
+  leaveGame(gameId: number, playerId: number): void {
     db.prepare(
-      'DELETE FROM game_players WHERE game_id = ? AND user_id = ?'
-    ).run(gameId, userId);
+      'DELETE FROM game_players WHERE game_id = ? AND player_id = ?'
+    ).run(gameId, playerId);
 
     // Vérifier s'il reste des joueurs
     const remaining = db.prepare(
@@ -224,15 +228,15 @@ export class GameService {
   }
 
   // Sauvegarder un message
-  saveMessage(gameId: number, userId: number, content: string): Message {
+  saveMessage(gameId: number, playerId: number, content: string): Message {
     const result = db.prepare(
-      'INSERT INTO messages (game_id, user_id, content) VALUES (?, ?, ?)'
-    ).run(gameId, userId, content);
+      'INSERT INTO messages (game_id, player_id, content) VALUES (?, ?, ?)'
+    ).run(gameId, playerId, content);
 
     return db.prepare(`
-      SELECT m.*, u.username
+      SELECT m.*, p.username
       FROM messages m
-      JOIN users u ON m.user_id = u.id
+      JOIN players p ON m.player_id = p.id
       WHERE m.id = ?
     `).get(result.lastInsertRowid) as Message;
   }
@@ -240,9 +244,9 @@ export class GameService {
   // Obtenir les messages d'une partie
   getMessages(gameId: number): Message[] {
     return db.prepare(`
-      SELECT m.*, u.username
+      SELECT m.*, p.username
       FROM messages m
-      JOIN users u ON m.user_id = u.id
+      JOIN players p ON m.player_id = p.id
       WHERE m.game_id = ?
       ORDER BY m.created_at ASC
     `).all(gameId) as Message[];
