@@ -1,30 +1,45 @@
-import { ReactNode } from 'react';
+import React from 'react';
 
-interface CardProps {
-  children: ReactNode;
-  className?: string;
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
 }
 
-export function Card({ children, className = '' }: CardProps) {
+export const Card = ({ children, className = '', ...props }: CardProps) => {
   return (
-    <div className={`bg-gray-800 rounded-xl shadow-lg border border-gray-700 ${className}`}>
+    <div className={`bg-white rounded-lg shadow-md ${className}`} {...props}>
       {children}
     </div>
   );
-}
+};
 
-export function CardHeader({ children, className = '' }: CardProps) {
+export const CardHeader = ({ children, className = '', ...props }: CardProps) => {
   return (
-    <div className={`px-6 py-4 border-b border-gray-700 ${className}`}>
+    <div className={`px-6 py-4 border-b border-gray-200 ${className}`} {...props}>
       {children}
     </div>
   );
-}
+};
 
-export function CardContent({ children, className = '' }: CardProps) {
+export const CardContent = ({ children, className = '', ...props }: CardProps) => {
   return (
-    <div className={`px-6 py-4 ${className}`}>
+    <div className={`px-6 py-4 ${className}`} {...props}>
       {children}
     </div>
   );
-}
+};
+
+export const CardTitle = ({ children, className = '', ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
+  return (
+    <h3 className={`text-lg font-semibold ${className}`} {...props}>
+      {children}
+    </h3>
+  );
+};
+
+export const CardDescription = ({ children, className = '', ...props }: React.HTMLAttributes<HTMLParagraphElement>) => {
+  return (
+    <p className={`text-sm text-gray-600 ${className}`} {...props}>
+      {children}
+    </p>
+  );
+};

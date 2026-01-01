@@ -11,10 +11,14 @@ initDatabase();
 // Créer le serveur HTTP
 const httpServer = createServer(app);
 
-// Configurer Socket.io
+// Configurer Socket.io avec CORS
+const allowedOrigins = config.nodeEnv === 'production'
+  ? [config.corsOrigin]
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
 const io = new Server(httpServer, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true
   }

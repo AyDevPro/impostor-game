@@ -1,5 +1,25 @@
 import { Request } from 'express';
 
+// User types (authenticated users)
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  password_hash: string;
+  created_at: string;
+  games_played: number;
+  total_points: number;
+}
+
+// Auth types
+export interface AuthRequest extends Request {
+  user?: User;
+  userId?: number;
+}
+
+// Vote types (alias pour RoleGuess)
+export type Vote = RoleGuess;
+
 // Player types (sessions temporaires)
 export interface Player {
   id: number;

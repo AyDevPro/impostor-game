@@ -435,6 +435,25 @@ export function setupSocket(io: Server) {
   });
 }
 
+// Fonction pour terminer automatiquement la phase de vote
+function endVotePhase(gameCode: string, gameId: number, io: Server) {
+  const game = gameService.getGameByCode(gameCode);
+  if (!game || game.current_phase !== 'vote') {
+    return;
+  }
+
+  const guessServiceInstance = new GuessService(db);
+
+  // Vérifier si tout le monde a soumis ses guesses
+  if (guessServiceInstance.haveAllPlayersGuessed(gameId)) {
+    // Si oui, terminer normalement
+    endGuessPhase(gameCode, gameId, io, guessServiceInstance);
+  } else {
+    // Sinon, forcer la fin du vote et terminer avec les guesses disponibles
+    endGuessPhase(gameCode, gameId, io, guessServiceInstance);
+  }
+}
+
 function endGuessPhase(gameCode: string, gameId: number, io: Server, guessService: GuessService) {
   const players = gameService.getGamePlayers(gameId);
   const guesses = guessService.getGameGuesses(gameId);
@@ -448,10 +467,11 @@ function endGuessPhase(gameCode: string, gameId: number, io: Server, guessServic
   });
 
   // Calculer la précision des devinettes pour chaque joueur
-  const guessAccuracy = new Map<number, { correct: number; total: number }>();
+  const guessAccuracy = new Map<number, { correct: number; total: number; accuracy: number }>();
   players.forEach(p => {
-    const accuracy = guessService.calculateGuesserAccuracy(gameId, p.player_id, playerRoles);
-    guessAccuracy.set(p.player_id, accuracy);
+    const accuracyData = guessService.calculateGuesserAccuracy(gameId, p.player_id, playerRoles);
+    const accuracy = accuracyData.total > 0 ? (accuracyData.correct / accuracyData.total) * 100 : 0;
+    guessAccuracy.set(p.player_id, { ...accuracyData, accuracy });
   });
 
   // Récupérer les stats LoL de tous les joueurs

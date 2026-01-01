@@ -1,3 +1,14 @@
+// User types (authenticated users)
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  created_at: string;
+  games_played: number;
+  games_won: number;
+  total_points: number;
+}
+
 // Player types (sessions temporaires)
 export interface Player {
   id: number;

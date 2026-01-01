@@ -2,12 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import { errorHandler } from './middleware/errorHandler.js';
 import gameRoutes from './routes/game.js';
+import { config } from './config/env.js';
 
 const app = express();
 
-// Middlewares
+// Middlewares - CORS configuration
+const allowedOrigins = config.nodeEnv === 'production'
+  ? [config.corsOrigin]
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(express.json());

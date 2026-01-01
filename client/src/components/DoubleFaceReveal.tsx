@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardContent } from './ui/card';
-import { Button } from './ui/button';
+import { Card, CardHeader, CardContent } from './ui/Card';
+import { Button } from './ui/Button';
 
 interface DoubleFaceRevealProps {
   debateStartTime: string;

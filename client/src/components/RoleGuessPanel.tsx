@@ -105,8 +105,7 @@ export function RoleGuessPanel({ players, myPlayerId, onSubmit, hasSubmitted }: 
                           backgroundColor: isSelected ? role.color : role.color + '40',
                           color: isSelected ? '#fff' : role.color,
                           borderColor: role.color,
-                          borderWidth: '2px',
-                          ringColor: role.color
+                          borderWidth: '2px'
                         }}
                       >
                         {role.name}
