@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # Backend Server
+  among-legends-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: among-legends-server
+    env_file:
+      - .env.local
+    ports:
+      - "3001:3001"
+    volumes:
+      - among-legends-db-data:/app/data
+    networks:
+      - among-network
+    restart: unless-stopped
+
+  # Frontend Client
+  among-legends-client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:3001/api
+        - VITE_WS_URL=http://localhost:3001
+    container_name: among-legends-client
+    ports:
+      - "3000:80"
+    depends_on:
+      - among-legends-server
+    networks:
+      - among-network
+    restart: unless-stopped
+
+networks:
+  among-network:
+    driver: bridge
+
+volumes:
+  among-legends-db-data:
+    driver: local

@@ -10,7 +10,13 @@
     "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
     "dev:server": "npm run dev -w server",
     "dev:client": "npm run dev -w client",
-    "build": "npm run build -w client && npm run build -w server"
+    "build": "npm run build -w client && npm run build -w server",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose down && docker-compose up -d",
+    "docker:clean": "docker-compose down -v"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

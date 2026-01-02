@@ -1,6 +1,8 @@
 # Among Legends
 
-Among Legends est un jeu multijoueur de déduction sociale inspiré de Among Us, intégré avec League of Legends. Les joueurs se voient attribuer des rôles secrets et doivent débattre pour identifier l'imposteur tout en accomplissant leurs objectifs spécifiques.
+Among Legends est un jeu multijoueur de déduction sociale inspiré du concept original de Solary. J'ai souhaité recréer ce jeu pour mon usage personnel afin de corriger certains bugs rencontrés et pouvoir maintenir ma propre version.
+
+**Note importante** : Ce projet est une recréation personnelle à des fins d'apprentissage et d'usage privé. Aucune donnée n'est collectée, et le projet n'a aucune vocation commerciale.
 
 ## 🎮 Fonctionnalités
 
@@ -25,118 +27,21 @@ Among Legends est un jeu multijoueur de déduction sociale inspiré de Among Us,
 Among-legends/
 ├── client/              # Frontend React
 │   ├── src/
-│   ├── Dockerfile       # Image Docker pour le frontend
-│   └── nginx.conf       # Configuration nginx
+│   └── Dockerfile
 ├── server/              # Backend Node.js
 │   ├── src/
-│   ├── Dockerfile       # Image Docker pour le backend
-│   └── data/            # Base de données SQLite (volume Docker)
-├── .env.production.example      # Template variables d'environnement serveur
-├── client/.env.production.example  # Template variables d'environnement client
-├── DEPLOIEMENT_TRAEFIK.md  # Guide de déploiement avec Traefik
-└── nginx-reverse-proxy.conf # Configuration nginx reverse proxy (optionnel)
+│   ├── Dockerfile
+│   └── data/            # Base de données SQLite
+├── docker-compose.yml   # Configuration Docker locale
+└── DOCKER_LOCAL.md      # Guide Docker pour développement
 ```
 
 ## 🚀 Déploiement
 
-### Option 1 : Déploiement avec Traefik (Recommandé)
+Le projet peut être déployé avec Docker. Des guides de déploiement détaillés sont disponibles :
 
-Among Legends est conçu pour être déployé avec Traefik comme reverse proxy centralisé.
-
-**Prérequis :**
-- Docker et Docker Compose
-- Traefik configuré sur votre serveur
-- DNS configuré pour pointer vers votre serveur
-
-**Étapes :**
-
-1. **Cloner le projet**
-```bash
-git clone https://github.com/AyDevPro/Among-legends.git
-cd Among-legends
-```
-
-2. **Configurer les variables d'environnement**
-```bash
-# Copier les templates
-cp .env.production.example .env.production
-cp client/.env.production.example client/.env.production
-
-# Générer un JWT secret sécurisé
-openssl rand -base64 32
-
-# Éditer .env.production et modifier JWT_SECRET et CORS_ORIGIN
-nano .env.production
-```
-
-3. **Ajouter les services au docker-compose principal**
-
-Ajoutez les services suivants à votre fichier `docker-compose.yml` principal :
-
-```yaml
-  among-legends-server:
-    build:
-      context: ./Among-legends/server
-      dockerfile: Dockerfile
-    container_name: among-legends-server
-    env_file:
-      - ./Among-legends/.env.production
-    volumes:
-      - among-legends-db-data:/app/data
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.among-api.rule=Host(`impostor-game.votredomaine.com`) && (PathPrefix(`/api`) || PathPrefix(`/socket.io`))"
-      - "traefik.http.routers.among-api.entrypoints=websecure"
-      - "traefik.http.routers.among-api.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.among-api.priority=100"
-      - "traefik.http.services.among-api.loadbalancer.server.port=3001"
-    networks:
-      - votre-reseau
-    restart: always
-
-  among-legends-client:
-    build:
-      context: ./Among-legends/client
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=https://impostor-game.votredomaine.com/api
-        - VITE_WS_URL=https://impostor-game.votredomaine.com
-    container_name: among-legends-client
-    depends_on:
-      - among-legends-server
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.among-front.rule=Host(`impostor-game.votredomaine.com`)"
-      - "traefik.http.routers.among-front.entrypoints=websecure"
-      - "traefik.http.routers.among-front.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.among-front.priority=10"
-    networks:
-      - votre-reseau
-    restart: always
-
-volumes:
-  among-legends-db-data:
-```
-
-4. **Builder et démarrer les services**
-```bash
-docker-compose build among-legends-server among-legends-client
-docker-compose up -d among-legends-server among-legends-client
-```
-
-5. **Vérifier les logs**
-```bash
-docker logs -f among-legends-server
-docker logs -f among-legends-client
-```
-
-📖 **Guide complet** : Consultez [DEPLOIEMENT_TRAEFIK.md](./DEPLOIEMENT_TRAEFIK.md)
-
-### Option 2 : Déploiement standalone avec nginx
-
-Si vous préférez utiliser nginx comme reverse proxy :
-
-📖 **Guide complet** : Consultez [DEPLOIEMENT.md](./DEPLOIEMENT.md)
+- **[DEPLOIEMENT_TRAEFIK.md](./DEPLOIEMENT_TRAEFIK.md)** - Déploiement avec Traefik (reverse proxy avec SSL automatique)
+- **[DEPLOIEMENT.md](./DEPLOIEMENT.md)** - Déploiement standalone avec nginx
 
 ## 💻 Développement Local
 
@@ -182,7 +87,34 @@ npm run dev:client  # Client sur port 5173
 - API : http://localhost:3001/api
 - WebSocket : http://localhost:3001
 
-### Commandes utiles
+### Développement avec Docker (Local)
+
+Pour tester l'application dans un environnement similaire à la production :
+
+```bash
+# Builder les images Docker
+npm run docker:build
+
+# Démarrer les conteneurs
+npm run docker:up
+
+# Voir les logs en temps réel
+npm run docker:logs
+
+# Redémarrer les conteneurs
+npm run docker:restart
+
+# Arrêter et tout nettoyer
+npm run docker:clean
+```
+
+**Accès avec Docker** :
+- Frontend : http://localhost:3000
+- API : http://localhost:3001/api
+
+📖 **Guide complet** : Consultez [DOCKER_LOCAL.md](./DOCKER_LOCAL.md)
+
+### Autres commandes
 
 ```bash
 # Build
@@ -221,11 +153,9 @@ Le projet utilise **SQLite** avec better-sqlite3.
 
 ## 📝 Documentation
 
-- [Guide de déploiement Traefik](./DEPLOIEMENT_TRAEFIK.md)
-- [Guide de déploiement nginx](./DEPLOIEMENT.md)
-- [Résumé de configuration](./RESUME_CONFIG.md)
-- [Plan d'implémentation](./PLAN_IMPLEMENTATION.md)
-- [Cahier des charges](./cahier_des_charges_among_legends.md)
+- [Docker Local](./DOCKER_LOCAL.md) - Développement avec Docker
+- [Déploiement Traefik](./DEPLOIEMENT_TRAEFIK.md) - Production avec Traefik
+- [Déploiement nginx](./DEPLOIEMENT.md) - Production avec nginx
 
 ## 🤝 Contribution
 
@@ -241,6 +171,5 @@ Ce projet est sous licence MIT.
 
 ## 🙏 Remerciements
 
+- **Solary** pour le concept original du jeu
 - Claude Code pour l'assistance au développement
-- La communauté League of Legends
-- Les joueurs de Among Us pour l'inspiration
