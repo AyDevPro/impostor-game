@@ -1,5 +1,17 @@
 -- Among Legends Database Schema
 
+-- Table des utilisateurs (authentifiés)
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    games_played INTEGER DEFAULT 0,
+    games_won INTEGER DEFAULT 0,
+    total_points INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Table des joueurs (sessions temporaires avec pseudos)
 CREATE TABLE IF NOT EXISTS players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -16,10 +16,13 @@ export function Home() {
 
   const handleCreateGame = async () => {
     setIsLoading(true);
+    setError(''); // Clear previous errors
     try {
       const response = await api.post('/games');
+      console.log('Game created:', response.data);
       navigate(`/lobby/${response.data.game.code}`);
     } catch (err: any) {
+      console.error('Error creating game:', err);
       setError(err.response?.data?.error || 'Erreur lors de la creation');
     } finally {
       setIsLoading(false);
@@ -77,9 +80,18 @@ export function Home() {
           </p>
         </div>
 
+        {/* Error display */}
+        {error && (
+          <div className="mb-8 max-w-2xl mx-auto">
+            <div className="bg-red-500/10 border border-red-500 text-red-500 px-6 py-4 rounded-lg text-center animate-fade-in">
+              {error}
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="grid md:grid-cols-2 gap-8 mb-16">
-          <Card className="group hover:border-primary-500 hover:scale-105 transition-all cursor-pointer relative overflow-hidden" onClick={handleCreateGame}>
+          <Card className="group hover:border-primary-500 hover:scale-105 transition-all relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <CardContent className="text-center py-10 relative z-10">
               <div className="text-6xl mb-5 transform group-hover:scale-110 transition-transform">🎯</div>
@@ -87,7 +99,7 @@ export function Home() {
               <p className="text-gray-300 mb-6 text-lg">
                 Lance une nouvelle partie et invite tes amis
               </p>
-              <Button size="lg" isLoading={isLoading} onClick={(e) => { e.stopPropagation(); handleCreateGame(); }} className="w-full">
+              <Button size="lg" isLoading={isLoading} onClick={handleCreateGame} className="w-full">
                 Créer maintenant
               </Button>
             </CardContent>

@@ -9,15 +9,16 @@ router.post('/', (req: Request, res: Response) => {
   try {
     const { username, sessionId } = req.body;
 
-    if (!username || typeof username !== 'string' || username.trim().length === 0) {
-      return res.status(400).json({ error: 'Pseudo requis' });
+    if (!username || !username.trim()) {
+      return res.status(400).json({ error: 'Username requis' });
     }
 
-    // Créer ou récupérer le joueur
-    const player = playerService.getOrCreatePlayer(username.trim(), sessionId);
+    // Créer un player pour cette partie
+    const finalSessionId = sessionId || `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const player = playerService.getOrCreatePlayer(username.trim(), finalSessionId);
 
     const game = gameService.createGame(player.id);
-    res.status(201).json({ game, sessionId: player.session_id });
+    res.status(201).json({ game, sessionId: finalSessionId });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
@@ -32,15 +33,16 @@ router.post('/join', (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Code de partie requis' });
     }
 
-    if (!username || typeof username !== 'string' || username.trim().length === 0) {
-      return res.status(400).json({ error: 'Pseudo requis' });
+    if (!username || !username.trim()) {
+      return res.status(400).json({ error: 'Username requis' });
     }
 
-    // Créer ou récupérer le joueur
-    const player = playerService.getOrCreatePlayer(username.trim(), sessionId);
+    // Créer un player pour cette partie
+    const finalSessionId = sessionId || `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const player = playerService.getOrCreatePlayer(username.trim(), finalSessionId);
 
     const game = gameService.joinGame(code.toUpperCase(), player.id);
-    res.json({ game, sessionId: player.session_id });
+    res.json({ game, sessionId: finalSessionId });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

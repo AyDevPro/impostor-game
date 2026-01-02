@@ -25,7 +25,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       socket.disconnect();
     }
 
-    const newSocket = io('/', {
+    const wsUrl = import.meta.env.VITE_WS_URL || window.location.origin;
+    const newSocket = io(wsUrl, {
       auth: {
         username,
         sessionId: sessionId || localStorage.getItem('sessionId')
