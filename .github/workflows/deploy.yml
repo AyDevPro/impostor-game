@@ -1,0 +1,61 @@
+name: Deploy Among Legends
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Sync files to server using rsync
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p 22 ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+          rsync -avz --delete -e "ssh -i ~/.ssh/id_rsa -p 22" ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/root/aydev/Among-legends
+
+      - name: Stop and remove old Among Legends containers
+        run: |
+          ssh -i ~/.ssh/id_rsa -p 22 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            cd /root/aydev
+            # Arrêter et supprimer les anciens containers Among Legends
+            docker compose rm -sf among-legends-server among-legends-client
+          EOF
+
+      - name: Remove old Among Legends images
+        run: |
+          ssh -i ~/.ssh/id_rsa -p 22 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            # Supprimer uniquement les anciennes images Among Legends
+            docker images | grep 'aydev_among-legends' | awk '{print $3}' | xargs -r docker rmi -f || true
+          EOF
+
+      - name: Rebuild containers without cache
+        run: |
+          ssh -i ~/.ssh/id_rsa -p 22 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            cd /root/aydev
+            # Rebuild complet sans cache pour Among Legends uniquement
+            docker compose build --no-cache among-legends-server among-legends-client
+          EOF
+
+      - name: Start new containers
+        run: |
+          ssh -i ~/.ssh/id_rsa -p 22 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            cd /root/aydev
+            # Démarrer les nouveaux containers
+            docker compose up -d among-legends-server among-legends-client
+          EOF
+
+      - name: Clean dangling images
+        run: |
+          ssh -i ~/.ssh/id_rsa -p 22 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            # Nettoyer uniquement les images temporaires sans tag (dangling)
+            docker image prune -f
+          EOF
