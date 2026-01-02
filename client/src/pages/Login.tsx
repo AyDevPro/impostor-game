@@ -29,17 +29,22 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 animate-fade-in">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary-500 mb-2">Among Legends</h1>
-          <p className="text-gray-400">Connecte-toi pour jouer</p>
+        <div className="text-center mb-10">
+          <div className="inline-block mb-4">
+            <div className="text-6xl mb-2">🎮</div>
+          </div>
+          <h1 className="text-5xl font-black bg-gradient-to-r from-primary-400 to-purple-400 bg-clip-text text-transparent mb-3">
+            Among Legends
+          </h1>
+          <p className="text-gray-400 text-lg">Trouve l'imposteur parmi nous</p>
         </div>
 
-        <Card>
+        <Card className="animate-fade-in">
           <CardHeader>
-            <h2 className="text-xl font-semibold text-white text-center">Connexion</h2>
+            <h2 className="text-2xl font-bold text-white text-center">Connexion</h2>
           </CardHeader>
 
           <CardContent>
@@ -78,11 +83,11 @@ export function Login() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-8 text-center">
               <p className="text-gray-400">
                 Pas encore de compte ?{' '}
-                <Link to="/register" className="text-primary-400 hover:text-primary-300">
-                  Inscris-toi
+                <Link to="/register" className="text-primary-400 hover:text-primary-300 font-semibold underline decoration-2 underline-offset-2">
+                  Inscris-toi gratuitement
                 </Link>
               </p>
             </div>

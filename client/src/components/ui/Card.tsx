@@ -6,7 +6,7 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export const Card = ({ children, className = '', ...props }: CardProps) => {
   return (
-    <div className={`bg-white rounded-lg shadow-md ${className}`} {...props}>
+    <div className={`bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl shadow-2xl hover:shadow-primary-500/10 transition-all duration-300 ${className}`} {...props}>
       {children}
     </div>
   );
@@ -14,7 +14,7 @@ export const Card = ({ children, className = '', ...props }: CardProps) => {
 
 export const CardHeader = ({ children, className = '', ...props }: CardProps) => {
   return (
-    <div className={`px-6 py-4 border-b border-gray-200 ${className}`} {...props}>
+    <div className={`px-6 py-5 border-b border-gray-700/50 ${className}`} {...props}>
       {children}
     </div>
   );
@@ -22,7 +22,7 @@ export const CardHeader = ({ children, className = '', ...props }: CardProps) =>
 
 export const CardContent = ({ children, className = '', ...props }: CardProps) => {
   return (
-    <div className={`px-6 py-4 ${className}`} {...props}>
+    <div className={`px-6 py-5 ${className}`} {...props}>
       {children}
     </div>
   );
@@ -38,7 +38,7 @@ export const CardTitle = ({ children, className = '', ...props }: React.HTMLAttr
 
 export const CardDescription = ({ children, className = '', ...props }: React.HTMLAttributes<HTMLParagraphElement>) => {
   return (
-    <p className={`text-sm text-gray-600 ${className}`} {...props}>
+    <p className={`text-sm text-gray-400 ${className}`} {...props}>
       {children}
     </p>
   );
