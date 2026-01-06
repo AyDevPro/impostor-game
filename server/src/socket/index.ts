@@ -6,6 +6,7 @@ import { StatsService } from '../services/statsService.js';
 import { GuessService } from '../services/guessService.js';
 import { RoleActionsService } from '../services/roleActionsService.js';
 import { RoleActionBonus } from '../services/statsBonusService.js';
+import { GuessData } from '../services/roleService.js';
 import { generateMissions } from '../utils/missionGenerator.js';
 import { ROLES, GAME_CONFIG } from '../utils/constants.js';
 import { RoleId } from '../types/index.js';
@@ -509,12 +510,23 @@ function endGuessPhase(gameCode: string, gameId: number, io: Server, guessServic
     }
   });
 
-  // Calculer la précision des devinettes pour chaque joueur
+  // Transformer les guesses en GuessData pour le nouveau système
+  const guessDataList: GuessData[] = guesses.map(g => ({
+    guesserId: g.guesser_id,
+    targetId: g.target_id,
+    guessedRole: g.guessed_role as RoleId,
+    actualRole: (playerRoles.get(g.target_id) || 'unknown') as RoleId,
+    isCorrect: g.guessed_role === playerRoles.get(g.target_id)
+  }));
+
+  // Calculer la précision des devinettes pour chaque joueur (pour l'affichage)
   const guessAccuracy = new Map<number, { correct: number; total: number; accuracy: number }>();
   players.forEach(p => {
-    const accuracyData = guessService.calculateGuesserAccuracy(gameId, p.player_id, playerRoles);
-    const accuracy = accuracyData.total > 0 ? (accuracyData.correct / accuracyData.total) * 100 : 0;
-    guessAccuracy.set(p.player_id, { ...accuracyData, accuracy });
+    const playerGuesses = guessDataList.filter(g => g.guesserId === p.player_id);
+    const correct = playerGuesses.filter(g => g.isCorrect).length;
+    const total = playerGuesses.length;
+    const accuracy = total > 0 ? (correct / total) * 100 : 0;
+    guessAccuracy.set(p.player_id, { correct, total, accuracy });
   });
 
   // Récupérer les stats LoL de tous les joueurs
@@ -532,14 +544,24 @@ function endGuessPhase(gameCode: string, gameId: number, io: Server, guessServic
   players.forEach(p => {
     const actions: RoleActionBonus = {};
 
-    // Vérifier si Double-Face s'est révélé
+    // Pour Double-Face: récupérer l'alignement actuel (basé sur le temps écoulé)
     if (p.role === 'double_face') {
-      actions.doubleFaceRevealed = roleActionsServiceInstance.hasDoubleFaceRevealed(gameId, p.player_id);
+      // L'alignement est calculé côté client, mais on peut stocker l'alignement final ici
+      // Pour l'instant, on suppose qu'il est stocké dans les actions du jeu
+      // TODO: Améliorer en récupérant l'alignement réel du client
+      actions.doubleFaceAlignment = 'gentil'; // Valeur par défaut
     }
 
     // Compter les missions Droide complétées
     if (p.role === 'droide') {
       actions.droideMissionsCompleted = roleActionsServiceInstance.countDroideMissionsCompleted(gameId, p.player_id);
+      actions.droideTotalMissions = 3; // Nombre total de missions assignées
+    }
+
+    // Pour Roméo: vérifier si le rôle a été respecté
+    if (p.role === 'romeo') {
+      // TODO: Implémenter la vérification si Juliette est morte et Roméo s'est suicidé
+      actions.romeoRespectedRole = true; // Valeur par défaut
     }
 
     roleActionsMap.set(p.player_id, actions);
@@ -551,8 +573,8 @@ function endGuessPhase(gameCode: string, gameId: number, io: Server, guessServic
     role: p.role as RoleId
   }));
 
-  // Calculer les points avec devinettes, stats LoL ET actions spéciales
-  const pointsMap = roleService.calculatePoints(playerRolesList, guessAccuracy, playerStatsMap, roleActionsMap);
+  // Calculer les points avec le nouveau système
+  const pointsMap = roleService.calculatePoints(playerRolesList, guessDataList, playerStatsMap, roleActionsMap);
 
   // Terminer la partie et sauvegarder les points
   const simplifiedPointsMap = new Map<number, number>();
@@ -591,16 +613,16 @@ function endGuessPhase(gameCode: string, gameId: number, io: Server, guessServic
   });
 
   const playerPoints = players.map(p => {
-    const pointData = pointsMap.get(p.player_id) || { total: 0, base: 0, guessBonus: 0, statsBonus: 0 };
+    const pointData = pointsMap.get(p.player_id) || { total: 0, voteBonus: 0, discoveryBonus: 0, roleBonus: 0 };
     return {
       userId: p.player_id,
       username: p.username,
       role: p.role!,
       points: pointData.total,
       breakdown: {
-        base: pointData.base,
-        guessBonus: pointData.guessBonus,
-        statsBonus: pointData.statsBonus
+        voteBonus: pointData.voteBonus,
+        discoveryBonus: pointData.discoveryBonus,
+        roleBonus: pointData.roleBonus
       }
     };
   });

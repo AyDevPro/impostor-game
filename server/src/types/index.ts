@@ -175,9 +175,9 @@ export interface PlayerPoints {
   role: string;
   points: number;
   breakdown?: {
-    base: number;
-    guessBonus: number;
-    statsBonus: number;
+    voteBonus: number;      // +1/-1 par vote correct/incorrect
+    discoveryBonus: number; // +1 si non découvert, -1 si découvert
+    roleBonus: number;      // Bonus spécifique au rôle
   };
 }
 

@@ -1,176 +1,206 @@
 import { RoleId, PlayerStats } from '../types/index.js';
 
 export interface RoleActionBonus {
-  doubleFaceRevealed?: boolean;
+  // Double-Face
+  doubleFaceAlignment?: 'gentil' | 'mechant';
+  // Droide
   droideMissionsCompleted?: number;
+  droideTotalMissions?: number;
+  // Roméo
+  romeoRespectedRole?: boolean; // A suivi la règle de mort si Juliette meurt
+}
+
+export interface TeamStats {
+  maxDamage: number;
+  maxKills: number;
+  maxAssists: number;
+  maxDeaths: number;
+}
+
+export interface VoteData {
+  // Nombre de joueurs qui ont voté pour ce joueur comme imposteur
+  votedAsImpostor: number;
+  // Nombre total de joueurs qui ont voté
+  totalVoters: number;
 }
 
 export class StatsBonusService {
-  // Calculer le bonus de stats pour un joueur basé sur son rôle et ses stats LoL
-  calculateStatsBonus(roleId: RoleId, stats: PlayerStats, roleActions?: RoleActionBonus): number {
-    // Calculer le KDA
-    const kda = stats.deaths === 0
-      ? stats.kills + stats.assists
-      : (stats.kills + stats.assists) / stats.deaths;
-
+  // Calculer le bonus de stats pour un joueur basé sur son rôle
+  calculateStatsBonus(
+    roleId: RoleId,
+    stats: PlayerStats,
+    teamStats: TeamStats,
+    roleActions?: RoleActionBonus,
+    voteData?: VoteData
+  ): number {
     const isVictory = stats.victory === 1;
 
     switch (roleId) {
-      case 'imposteur':
-        return this.calculateImposteurBonus(isVictory, kda, stats.damage);
-
-      case 'droide':
-        return this.calculateDroideBonus(kda, roleActions?.droideMissionsCompleted || 0);
+      case 'super_heros':
+        return this.calculateSuperHerosBonus(isVictory, stats, teamStats);
 
       case 'serpentin':
-        return this.calculateSerpentinBonus(isVictory, stats.kills, stats.damage);
+        return this.calculateSerpentinBonus(isVictory, stats, teamStats);
 
       case 'double_face':
-        return this.calculateDoubleFaceBonus(stats.kills, stats.assists, roleActions?.doubleFaceRevealed || false);
-
-      case 'super_heros':
-        return this.calculateSuperHerosBonus(isVictory, kda);
+        return this.calculateDoubleFaceBonus(isVictory, roleActions?.doubleFaceAlignment);
 
       case 'romeo':
-        return this.calculateRomeoBonus(stats.assists);
+        return this.calculateRomeoBonus(isVictory, roleActions?.romeoRespectedRole);
 
       case 'escroc':
-        return this.calculateEscrocBonus(stats.damage);
+        return this.calculateEscrocBonus(isVictory, voteData);
+
+      case 'imposteur':
+        return this.calculateImposteurBonus(isVictory, voteData);
+
+      case 'droide':
+        return this.calculateDroideBonus(isVictory, roleActions);
 
       default:
         return 0;
     }
   }
 
-  // Imposteur : malus si trop bon (se fait repérer)
-  private calculateImposteurBonus(isVictory: boolean, kda: number, damage: number): number {
+  // SuperHéros: +2 victoire, -3 défaite, +1 plus de dégâts/assists/kills, pas de pénalité si découvert
+  private calculateSuperHerosBonus(isVictory: boolean, stats: PlayerStats, teamStats: TeamStats): number {
     let bonus = 0;
 
-    // Si victoire + stats trop bonnes = MALUS (suspect)
-    if (isVictory && (kda > 3.5 || damage > 30000)) {
-      bonus = -20; // Pénalité pour avoir été trop visible
-    }
-    // Si défaite + mauvaises stats = BONUS (bien joué le rôle)
-    else if (!isVictory && kda < 2.0) {
-      bonus = 30; // Récompense pour avoir bien fait perdre
-    }
-    // Stats moyennes = OK
-    else if (!isVictory) {
-      bonus = 15;
-    }
-
-    return bonus;
-  }
-
-  // Droide : KDA proche de 1.0 (équilibré, discret) + bonus missions
-  private calculateDroideBonus(kda: number, missionsCompleted: number): number {
-    const kdaDiff = Math.abs(kda - 1.0);
-
-    let kdaBonus = 0;
-    if (kdaDiff <= 0.2) {
-      kdaBonus = 40; // Parfait, très discret
-    } else if (kdaDiff <= 0.5) {
-      kdaBonus = 25; // Bien
-    } else if (kdaDiff <= 1.0) {
-      kdaBonus = 15; // Acceptable
-    } else {
-      kdaBonus = 5; // Trop visible
-    }
-
-    // Bonus pour les missions complétées : 15 points par mission
-    const missionBonus = missionsCompleted * 15;
-
-    return kdaBonus + missionBonus;
-  }
-
-  // Serpentin : bonus pour kills et damage élevés
-  private calculateSerpentinBonus(isVictory: boolean, kills: number, damage: number): number {
-    let bonus = 0;
-
-    // Bonus pour victoire
+    // Victoire/Défaite
     if (isVictory) {
-      bonus += 20;
+      bonus += 2;
+    } else {
+      bonus -= 3;
     }
 
-    // Bonus pour beaucoup de kills
-    if (kills >= 15) {
-      bonus += 30;
-    } else if (kills >= 10) {
-      bonus += 20;
-    } else if (kills >= 7) {
-      bonus += 10;
+    // +1 pour chaque stat où il est premier
+    if (stats.damage >= teamStats.maxDamage) {
+      bonus += 1;
     }
-
-    // Bonus pour beaucoup de dégâts
-    if (damage >= 35000) {
-      bonus += 20;
-    } else if (damage >= 25000) {
-      bonus += 10;
+    if (stats.kills >= teamStats.maxKills) {
+      bonus += 1;
+    }
+    if (stats.assists >= teamStats.maxAssists) {
+      bonus += 1;
     }
 
     return bonus;
   }
 
-  // Double Face : stats équilibrées et bonne participation + bonus révélation
-  private calculateDoubleFaceBonus(kills: number, assists: number, revealed: boolean): number {
-    const participation = kills + assists;
+  // Serpentin: +2 victoire, -2 défaite, +1 plus de dégâts, +1 plus de morts
+  private calculateSerpentinBonus(isVictory: boolean, stats: PlayerStats, teamStats: TeamStats): number {
+    let bonus = 0;
 
-    let participationBonus = 0;
-    if (participation >= 15) {
-      participationBonus = 35; // Excellente participation
-    } else if (participation >= 10) {
-      participationBonus = 25; // Bonne participation
-    } else if (participation >= 5) {
-      participationBonus = 15; // Participation acceptable
+    // Victoire/Défaite
+    if (isVictory) {
+      bonus += 2;
     } else {
-      participationBonus = 5; // Participation faible
+      bonus -= 2;
     }
 
-    // Bonus si révélé dans les 30 secondes : +25 points
-    const revealBonus = revealed ? 25 : 0;
+    // +1 si plus de dégâts
+    if (stats.damage >= teamStats.maxDamage) {
+      bonus += 1;
+    }
 
-    return participationBonus + revealBonus;
+    // +1 si plus de morts
+    if (stats.deaths >= teamStats.maxDeaths) {
+      bonus += 1;
+    }
+
+    return bonus;
   }
 
-  // Super Héros : GROS malus si défaite, bonus si victoire + bon KDA
-  private calculateSuperHerosBonus(isVictory: boolean, kda: number): number {
-    if (!isVictory) {
-      return -50; // GROSSE pénalité si défaite (objectif raté)
+  // Double-Face: +2 si bon timing (gentil à la victoire OU méchant à la défaite)
+  private calculateDoubleFaceBonus(isVictory: boolean, alignment?: 'gentil' | 'mechant'): number {
+    if (!alignment) return 0;
+
+    // Gentil à la victoire = +2
+    // Méchant à la défaite = +2
+    if ((alignment === 'gentil' && isVictory) || (alignment === 'mechant' && !isVictory)) {
+      return 2;
     }
 
-    // Victoire : bonus selon performance
-    if (kda >= 5.0) {
-      return 50; // Performance héroïque
-    } else if (kda >= 3.5) {
-      return 35; // Très bonne performance
-    } else if (kda >= 2.5) {
-      return 20; // Bonne performance
-    }
-    return 10; // Performance moyenne
+    return 0;
   }
 
-  // Roméo : bonus pour assists (protège Juliette)
-  private calculateRomeoBonus(assists: number): number {
-    if (assists >= 15) {
-      return 35; // Excellent support
-    } else if (assists >= 10) {
-      return 25; // Bon support
-    } else if (assists >= 7) {
-      return 15; // Support acceptable
+  // Roméo: +2 victoire, -2 défaite, +1 si rôle respecté (suicide si Juliette meurt)
+  private calculateRomeoBonus(isVictory: boolean, respectedRole?: boolean): number {
+    let bonus = 0;
+
+    // Victoire/Défaite
+    if (isVictory) {
+      bonus += 2;
+    } else {
+      bonus -= 2;
     }
-    return 5; // Support faible
+
+    // +1 si rôle respecté
+    if (respectedRole) {
+      bonus += 1;
+    }
+
+    return bonus;
   }
 
-  // Escroc : bonus si peu de dégâts (discret)
-  private calculateEscrocBonus(damage: number): number {
-    if (damage < 12000) {
-      return 35; // Très discret
-    } else if (damage < 18000) {
-      return 25; // Assez discret
-    } else if (damage < 25000) {
-      return 15; // Peu discret
+  // Escroc: +2 victoire, -3 défaite, +1 par personne qui vote pour lui comme imposteur
+  private calculateEscrocBonus(isVictory: boolean, voteData?: VoteData): number {
+    let bonus = 0;
+
+    // Victoire/Défaite
+    if (isVictory) {
+      bonus += 2;
+    } else {
+      bonus -= 3;
     }
-    return 5; // Trop visible
+
+    // +1 par personne qui vote pour lui comme imposteur
+    if (voteData) {
+      bonus += voteData.votedAsImpostor;
+    }
+
+    return bonus;
+  }
+
+  // Imposteur: -3 victoire, +2 défaite, +1 par personne qui ne vote PAS pour lui comme imposteur
+  private calculateImposteurBonus(isVictory: boolean, voteData?: VoteData): number {
+    let bonus = 0;
+
+    // Victoire = mauvais (équipe a gagné malgré lui), Défaite = bon (équipe a perdu)
+    if (isVictory) {
+      bonus -= 3;
+    } else {
+      bonus += 2;
+    }
+
+    // +1 par personne qui n'a PAS voté pour lui comme imposteur
+    if (voteData) {
+      const notVotedAsImpostor = voteData.totalVoters - voteData.votedAsImpostor;
+      bonus += notVotedAsImpostor;
+    }
+
+    return bonus;
+  }
+
+  // Droide: +2 victoire, -2 défaite, +1 si rôle respecté (missions complétées)
+  private calculateDroideBonus(isVictory: boolean, roleActions?: RoleActionBonus): number {
+    let bonus = 0;
+
+    // Victoire/Défaite
+    if (isVictory) {
+      bonus += 2;
+    } else {
+      bonus -= 2;
+    }
+
+    // +1 si toutes les missions sont complétées
+    if (roleActions?.droideMissionsCompleted && roleActions?.droideTotalMissions) {
+      if (roleActions.droideMissionsCompleted >= roleActions.droideTotalMissions) {
+        bonus += 1;
+      }
+    }
+
+    return bonus;
   }
 }
 

@@ -107,7 +107,7 @@ export function Game() {
                   .sort((a, b) => b.points - a.points)
                   .map((player, index) => {
                     const roleInfo = ROLES[player.role as RoleId];
-                    const objectiveSuccess = player.breakdown && player.breakdown.statsBonus >= 0;
+                    const objectiveSuccess = player.breakdown && player.breakdown.roleBonus >= 0;
 
                     return (
                       <div
@@ -156,16 +156,20 @@ export function Game() {
 
                         {/* Breakdown des points */}
                         {player.breakdown && (
-                          <div className="flex gap-4 text-sm mt-3 pt-3 border-t border-gray-600">
+                          <div className="flex flex-wrap gap-3 text-sm mt-3 pt-3 border-t border-gray-600">
                             <div className="text-gray-400">
-                              Base: <span className="text-white">{player.breakdown.base}</span>
+                              Votes: <span className={player.breakdown.voteBonus >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                {player.breakdown.voteBonus >= 0 ? '+' : ''}{player.breakdown.voteBonus}
+                              </span>
                             </div>
                             <div className="text-gray-400">
-                              Devinettes: <span className="text-green-400">+{player.breakdown.guessBonus}</span>
+                              Discrétion: <span className={player.breakdown.discoveryBonus >= 0 ? 'text-blue-400' : 'text-red-400'}>
+                                {player.breakdown.discoveryBonus >= 0 ? '+' : ''}{player.breakdown.discoveryBonus}
+                              </span>
                             </div>
                             <div className="text-gray-400">
-                              Stats: <span className={player.breakdown.statsBonus >= 0 ? 'text-blue-400' : 'text-red-400'}>
-                                {player.breakdown.statsBonus >= 0 ? '+' : ''}{player.breakdown.statsBonus}
+                              Rôle: <span className={player.breakdown.roleBonus >= 0 ? 'text-purple-400' : 'text-red-400'}>
+                                {player.breakdown.roleBonus >= 0 ? '+' : ''}{player.breakdown.roleBonus}
                               </span>
                             </div>
                           </div>
@@ -434,8 +438,8 @@ export function Game() {
                     </div>
 
                     <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg p-4 border border-yellow-500/30">
-                      <p className="text-yellow-400 font-semibold text-center">
-                        Points maximum : {myRole.points} pts
+                      <p className="text-yellow-400 font-semibold text-center text-sm">
+                        Rappel : +1/-1 par vote correct/incorrect, +1/-1 selon si ton role est devine ou non
                       </p>
                     </div>
                   </div>
