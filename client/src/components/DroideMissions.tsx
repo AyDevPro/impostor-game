@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Button } from './ui/Button';
 
@@ -11,6 +11,7 @@ export interface DroideMission {
 interface DroideMissionsProps {
   missions: DroideMission[];
   onCompleteMission: (missionId: string) => void;
+  gameCode?: string;
 }
 
 const difficultyColors = {
@@ -25,13 +26,44 @@ const difficultyLabels = {
   hard: 'Difficile'
 };
 
-export function DroideMissions({ missions, onCompleteMission }: DroideMissionsProps) {
-  const [completedMissions, setCompletedMissions] = useState<Set<string>>(new Set());
+const difficultyPoints = {
+  easy: 10,
+  medium: 20,
+  hard: 35
+};
+
+export function DroideMissions({ missions, onCompleteMission, gameCode }: DroideMissionsProps) {
+  // Charger l'état depuis localStorage
+  const [completedMissions, setCompletedMissions] = useState<Set<string>>(() => {
+    if (gameCode) {
+      const stored = localStorage.getItem(`droideMissions_${gameCode}`);
+      if (stored) {
+        try {
+          return new Set(JSON.parse(stored));
+        } catch {
+          return new Set();
+        }
+      }
+    }
+    return new Set();
+  });
+
+  // Sauvegarder dans localStorage quand l'état change
+  useEffect(() => {
+    if (gameCode && completedMissions.size > 0) {
+      localStorage.setItem(`droideMissions_${gameCode}`, JSON.stringify([...completedMissions]));
+    }
+  }, [completedMissions, gameCode]);
 
   const handleComplete = (missionId: string) => {
     setCompletedMissions(prev => new Set([...prev, missionId]));
     onCompleteMission(missionId);
   };
+
+  // Calculer les points bonus
+  const totalPoints = missions
+    .filter(m => completedMissions.has(m.id))
+    .reduce((sum, m) => sum + difficultyPoints[m.difficulty], 0);
 
   return (
     <Card className="bg-blue-900/20 border-blue-500">
@@ -65,6 +97,9 @@ export function DroideMissions({ missions, onCompleteMission }: DroideMissionsPr
                     >
                       {difficultyLabels[mission.difficulty]}
                     </span>
+                    <span className="text-xs text-yellow-400">
+                      +{difficultyPoints[mission.difficulty]} pts
+                    </span>
                     {isCompleted && (
                       <span className="text-green-400 text-sm font-bold">✓ Complétée</span>
                     )}
@@ -87,9 +122,12 @@ export function DroideMissions({ missions, onCompleteMission }: DroideMissionsPr
           );
         })}
 
-        <div className="mt-4 p-2 bg-blue-950/50 rounded text-center">
-          <p className="text-xs text-blue-300">
+        <div className="mt-4 p-3 bg-blue-950/50 rounded text-center space-y-1">
+          <p className="text-sm text-blue-300 font-semibold">
             Missions complétées: {completedMissions.size}/{missions.length}
+          </p>
+          <p className="text-xs text-yellow-400">
+            Bonus estimé: +{totalPoints} pts
           </p>
         </div>
       </CardContent>

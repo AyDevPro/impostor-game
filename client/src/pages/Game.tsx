@@ -449,6 +449,7 @@ export function Game() {
             <DroideMissions
               missions={droideMissions}
               onCompleteMission={completeDroideMission}
+              gameCode={code}
             />
           )}
 
