@@ -144,6 +144,9 @@ export function setupSocket(io: Server) {
       // Démarrer la partie
       gameService.startGame(game.id, roleAssignments);
 
+      // Timestamp de début de partie (pour le Double-Face)
+      const gameStartTime = Date.now();
+
       // Notifier tout le lobby que le jeu démarre
       io.to(gameCode).emit('game:status-changed', { status: 'playing' });
       console.log(`[GAME START] Emitted game:status-changed to room ${gameCode}`);
@@ -195,7 +198,7 @@ export function setupSocket(io: Server) {
             console.log(`[GAME START] Romeo ${player.username}'s Juliette is ${julietteForRomeo.name}`);
           }
 
-          playerSocket.emit('game:started', { role, specialData });
+          playerSocket.emit('game:started', { role, specialData, gameStartTime });
 
           // Si c'est un Droide, lui envoyer 3 missions
           if (roleId === 'droide') {

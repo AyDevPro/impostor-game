@@ -48,6 +48,15 @@ export function useGame(gameCode: string | undefined) {
     }
     return null;
   });
+  const [gameStartTime, setGameStartTime] = useState<number | null>(() => {
+    if (gameCode) {
+      const stored = localStorage.getItem(`gameStartTime_${gameCode}`);
+      if (stored) {
+        return parseInt(stored, 10);
+      }
+    }
+    return null;
+  });
 
   // Charger les données initiales
   useEffect(() => {
@@ -124,7 +133,7 @@ export function useGame(gameCode: string | undefined) {
       setGame(prev => prev ? { ...prev, status: status as any } : null);
     });
 
-    socket.on('game:started', ({ role, specialData }: { role: Role; specialData?: RoleSpecialData }) => {
+    socket.on('game:started', ({ role, specialData, gameStartTime: startTime }: { role: Role; specialData?: RoleSpecialData; gameStartTime?: number }) => {
       setMyRole(role);
       // Stocker le rôle dans localStorage pour le récupérer après navigation
       if (gameCode) {
@@ -133,6 +142,11 @@ export function useGame(gameCode: string | undefined) {
         if (specialData) {
           setRoleSpecialData(specialData);
           localStorage.setItem(`roleSpecialData_${gameCode}`, JSON.stringify(specialData));
+        }
+        // Stocker le timestamp de début de partie
+        if (startTime) {
+          setGameStartTime(startTime);
+          localStorage.setItem(`gameStartTime_${gameCode}`, startTime.toString());
         }
       }
     });
@@ -275,6 +289,7 @@ export function useGame(gameCode: string | undefined) {
     doubleFaceRevealed,
     debateStartTime,
     roleSpecialData,
+    gameStartTime,
     toggleReady,
     sendMessage,
     startGame,

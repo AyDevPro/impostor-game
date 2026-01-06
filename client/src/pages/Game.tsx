@@ -12,6 +12,7 @@ import { StatsForm } from '../components/StatsForm';
 import { DoubleFaceReveal } from '../components/DoubleFaceReveal';
 import { DroideMissions } from '../components/DroideMissions';
 import { DoubleFaceNotification } from '../components/DoubleFaceNotification';
+import { DoubleFaceStatus } from '../components/DoubleFaceStatus';
 import { ROLES } from '../utils/constants';
 import { RoleId } from '../types';
 
@@ -36,6 +37,7 @@ export function Game() {
     doubleFaceRevealed,
     debateStartTime,
     roleSpecialData,
+    gameStartTime,
     sendMessage,
     startStats,
     submitStats,
@@ -450,23 +452,12 @@ export function Game() {
             />
           )}
 
-          {/* Alignement Double-Face */}
-          {myRole?.id === 'double_face' && roleSpecialData?.alignment && (
-            <Card className={`border-2 ${roleSpecialData.alignment === 'gentil' ? 'border-green-500 bg-green-900/20' : 'border-red-500 bg-red-900/20'}`}>
-              <CardContent className="py-6 text-center">
-                <div className="text-4xl mb-3">
-                  {roleSpecialData.alignment === 'gentil' ? '😇' : '😈'}
-                </div>
-                <h3 className={`text-2xl font-bold mb-2 ${roleSpecialData.alignment === 'gentil' ? 'text-green-400' : 'text-red-400'}`}>
-                  Tu es {roleSpecialData.alignment === 'gentil' ? 'GENTIL' : 'MÉCHANT'}
-                </h3>
-                <p className="text-gray-300">
-                  {roleSpecialData.alignment === 'gentil'
-                    ? 'Tu gagnes si ton équipe GAGNE la partie LoL !'
-                    : 'Tu gagnes si ton équipe PERD la partie LoL !'}
-                </p>
-              </CardContent>
-            </Card>
+          {/* État Double-Face avec timer */}
+          {myRole?.id === 'double_face' && roleSpecialData?.alignment && gameStartTime && (
+            <DoubleFaceStatus
+              initialAlignment={roleSpecialData.alignment}
+              gameStartTime={gameStartTime}
+            />
           )}
 
           {/* Juliette pour Roméo */}
@@ -589,15 +580,12 @@ export function Game() {
             />
           )}
 
-          {/* Alignement Double-Face (rappel) */}
-          {myRole?.id === 'double_face' && roleSpecialData?.alignment && (
-            <Card className={`border ${roleSpecialData.alignment === 'gentil' ? 'border-green-500' : 'border-red-500'}`}>
-              <CardContent className="py-3 text-center">
-                <span className={`font-bold ${roleSpecialData.alignment === 'gentil' ? 'text-green-400' : 'text-red-400'}`}>
-                  {roleSpecialData.alignment === 'gentil' ? '😇 GENTIL' : '😈 MÉCHANT'}
-                </span>
-              </CardContent>
-            </Card>
+          {/* État Double-Face (avec timer même en débat pour montrer l'état final) */}
+          {myRole?.id === 'double_face' && roleSpecialData?.alignment && gameStartTime && (
+            <DoubleFaceStatus
+              initialAlignment={roleSpecialData.alignment}
+              gameStartTime={gameStartTime}
+            />
           )}
 
           {/* Juliette pour Roméo (rappel) */}
