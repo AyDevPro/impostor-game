@@ -20,11 +20,7 @@ jobs:
       
       - name: Create .env.production on server
         run: |
-          ssh -i ~/.ssh/id_rsa -p 22 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
-            cat > /root/aydev/Among-legends/.env.production << 'ENVEOF'
-          ${{ secrets.ENV_PRODUCTION }}
-          ENVEOF
-          EOF
+          ssh -i ~/.ssh/id_rsa -p 22 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "echo '${{ secrets.ENV_PRODUCTION }}' > /root/aydev/Among-legends/.env.production"
       
       - name: Stop and remove old Among Legends containers
         run: |
