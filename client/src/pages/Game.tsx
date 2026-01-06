@@ -394,139 +394,101 @@ export function Game() {
     return (
       <div className="min-h-screen p-4">
         <header className="max-w-4xl mx-auto py-4">
-          <h1 className="text-3xl font-bold text-primary-500 text-center">Partie en cours</h1>
+          <h1 className="text-2xl font-bold text-primary-500 text-center">Partie en cours</h1>
         </header>
 
-        <main className="max-w-3xl mx-auto mt-8 space-y-6">
-          {/* Rappel du rôle - toujours visible */}
+        <main className="max-w-3xl mx-auto mt-6 space-y-4">
+          {/* Carte du rôle - Version compacte */}
           {myRole && (
-            <div style={{ borderColor: myRole.color }} className="border-2 rounded-xl">
-              <Card>
-                <CardContent className="py-8">
-                  {/* Nom du rôle */}
-                  <div className="text-center mb-6">
-                    <div
-                      className="inline-block text-4xl font-bold px-8 py-4 rounded-lg"
-                      style={{
-                        backgroundColor: myRole.color + '20',
-                        color: myRole.color,
-                        border: `2px solid ${myRole.color}`
-                      }}
-                    >
-                      {myRole.name}
-                    </div>
+            <Card style={{ borderColor: myRole.color, borderWidth: '2px' }}>
+              <CardContent className="py-5">
+                {/* Header avec nom du rôle */}
+                <div className="flex items-center gap-4 mb-4">
+                  <div
+                    className="text-2xl font-bold px-4 py-2 rounded-lg"
+                    style={{
+                      backgroundColor: myRole.color + '20',
+                      color: myRole.color
+                    }}
+                  >
+                    {myRole.name}
                   </div>
+                  <p className="text-gray-300 text-sm flex-1">
+                    {myRole.objective}
+                  </p>
+                </div>
 
-                  {/* Description et objectif */}
-                  <div className="space-y-4">
-                    <div className="bg-gray-800 rounded-lg p-5">
-                      <h3 className="text-lg font-semibold text-primary-400 mb-2">
-                        Description
-                      </h3>
-                      <p className="text-gray-300 leading-relaxed">
-                        {myRole.description}
-                      </p>
-                    </div>
+                {/* Infos spécifiques selon le rôle */}
+                {/* Double-Face : Alignement avec timer */}
+                {myRole.id === 'double_face' && roleSpecialData?.alignment && gameStartTime && (
+                  <DoubleFaceStatus
+                    initialAlignment={roleSpecialData.alignment}
+                    gameStartTime={gameStartTime}
+                  />
+                )}
 
-                    <div className="bg-gray-800 rounded-lg p-5">
-                      <h3 className="text-lg font-semibold text-yellow-400 mb-2">
-                        Objectif
-                      </h3>
-                      <p className="text-white font-medium leading-relaxed">
-                        {myRole.objective}
-                      </p>
-                    </div>
-
-                    <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg p-4 border border-yellow-500/30">
-                      <p className="text-yellow-400 font-semibold text-center text-sm">
-                        Rappel : +1/-1 par vote correct/incorrect, +1/-1 selon si ton role est devine ou non
-                      </p>
-                    </div>
+                {/* Roméo : Sa Juliette */}
+                {myRole.id === 'romeo' && roleSpecialData?.julietteName && (
+                  <div className="bg-pink-900/30 border border-pink-500 rounded-lg p-4 text-center">
+                    <span className="text-pink-400 font-bold text-lg">
+                      💕 Ta Juliette : {roleSpecialData.julietteName}
+                    </span>
+                    <p className="text-gray-400 text-sm mt-1">
+                      Si elle meurt, tu as 1 min pour te suicider !
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                )}
 
-          {/* Missions Droide - Seulement pour le rôle Droide */}
-          {myRole?.id === 'droide' && droideMissions.length > 0 && (
-            <DroideMissions
-              missions={droideMissions}
-              onCompleteMission={completeDroideMission}
-              gameCode={code}
-            />
-          )}
-
-          {/* État Double-Face avec timer */}
-          {myRole?.id === 'double_face' && roleSpecialData?.alignment && gameStartTime && (
-            <DoubleFaceStatus
-              initialAlignment={roleSpecialData.alignment}
-              gameStartTime={gameStartTime}
-            />
-          )}
-
-          {/* Juliette pour Roméo */}
-          {myRole?.id === 'romeo' && roleSpecialData?.julietteName && (
-            <Card className="border-2 border-pink-500 bg-pink-900/20">
-              <CardContent className="py-6 text-center">
-                <div className="text-4xl mb-3">💕</div>
-                <h3 className="text-2xl font-bold mb-2 text-pink-400">
-                  Ta Juliette est : {roleSpecialData.julietteName}
-                </h3>
-                <p className="text-gray-300">
-                  Si elle meurt en jeu, tu as 1 minute pour te suicider !
-                </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  (Elle peut être dans ton équipe ou l'équipe adverse)
-                </p>
+                {/* Droïde : Missions */}
+                {myRole.id === 'droide' && droideMissions.length > 0 && (
+                  <DroideMissions
+                    missions={droideMissions}
+                    onCompleteMission={completeDroideMission}
+                    gameCode={code}
+                  />
+                )}
               </CardContent>
             </Card>
           )}
 
-          {/* Instructions */}
+          {/* Instructions + Bouton */}
           <Card>
-            <CardContent className="text-center py-8">
-              <div className="text-5xl mb-4">🎮</div>
-              <h2 className="text-2xl font-bold text-white mb-3">
-                Lance ta partie de League of Legends !
-              </h2>
-              <p className="text-gray-400 mb-6 max-w-xl mx-auto">
-                Joue ta partie normalement tout en respectant les objectifs de ton rôle.
-                Quand la partie est terminée, reviens ici pour soumettre tes statistiques.
-              </p>
-
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6 max-w-xl mx-auto">
-                <p className="text-yellow-400 font-medium">
-                  ⚠️ N'oublie pas ton rôle et tes objectifs pendant la partie !
-                </p>
+            <CardContent className="text-center py-6">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <span className="text-4xl">🎮</span>
+                <h2 className="text-xl font-bold text-white">
+                  Joue ta partie LoL !
+                </h2>
               </div>
+
+              <p className="text-gray-400 text-sm mb-4">
+                Respecte les objectifs de ton rôle pendant la partie.
+              </p>
 
               {/* Bouton pour passer à la phase stats - Seulement pour l'hôte */}
               {isHostForRole ? (
                 <Button
                   size="lg"
-                  className="text-xl py-4 px-8"
+                  className="text-lg py-3 px-6"
                   onClick={startStats}
                 >
-                  🏁 Fin de la partie LoL - Passer aux stats
+                  Fin de la partie LoL
                 </Button>
               ) : (
-                <div className="text-gray-400 text-center">
-                  <p>En attente que l'hôte termine la partie LoL...</p>
-                </div>
+                <p className="text-gray-500 text-sm">
+                  En attente que l'hôte termine la partie...
+                </p>
               )}
             </CardContent>
           </Card>
 
-          {/* Liste des joueurs */}
+          {/* Liste des joueurs - Compacte */}
           <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-white text-center">
-                Joueurs dans la partie ({players.length})
-              </h3>
-            </CardHeader>
-            <CardContent>
-              <PlayerList players={players} />
+            <CardContent className="py-3">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 text-sm">Joueurs</span>
+                <span className="text-white font-medium">{players.length}</span>
+              </div>
             </CardContent>
           </Card>
         </main>

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardContent } from './ui/Card';
 import { Button } from './ui/Button';
 
 export interface DroideMission {
@@ -21,15 +20,9 @@ const difficultyColors = {
 };
 
 const difficultyLabels = {
-  easy: 'Facile',
-  medium: 'Moyen',
-  hard: 'Difficile'
-};
-
-const difficultyPoints = {
-  easy: 10,
-  medium: 20,
-  hard: 35
+  easy: 'F',
+  medium: 'M',
+  hard: 'D'
 };
 
 export function DroideMissions({ missions, onCompleteMission, gameCode }: DroideMissionsProps) {
@@ -60,77 +53,54 @@ export function DroideMissions({ missions, onCompleteMission, gameCode }: Droide
     onCompleteMission(missionId);
   };
 
-  // Calculer les points bonus
-  const totalPoints = missions
-    .filter(m => completedMissions.has(m.id))
-    .reduce((sum, m) => sum + difficultyPoints[m.difficulty], 0);
-
   return (
-    <Card className="bg-blue-900/20 border-blue-500">
-      <CardHeader>
-        <h3 className="text-blue-400 font-bold">🤖 Missions Droide</h3>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <p className="text-sm text-gray-300 mb-4">
-          Complète ces missions pendant la partie LoL. Plus tu en complètes, plus tu gagnes de points !
-        </p>
+    <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-3 mt-3">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-blue-400 font-bold text-sm">Missions</span>
+        <span className="text-blue-300 text-xs">
+          {completedMissions.size}/{missions.length} complétées
+        </span>
+      </div>
 
+      <div className="space-y-2">
         {missions.map((mission) => {
           const isCompleted = completedMissions.has(mission.id);
 
           return (
             <div
               key={mission.id}
-              className={`p-3 rounded-lg border ${
+              className={`flex items-center gap-2 p-2 rounded ${
                 isCompleted
-                  ? 'bg-green-900/30 border-green-500'
-                  : 'bg-gray-800/50 border-gray-600'
+                  ? 'bg-green-900/30 border border-green-600'
+                  : 'bg-gray-800/50 border border-gray-700'
               }`}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded ${
-                        difficultyColors[mission.difficulty]
-                      } text-white font-semibold`}
-                    >
-                      {difficultyLabels[mission.difficulty]}
-                    </span>
-                    <span className="text-xs text-yellow-400">
-                      +{difficultyPoints[mission.difficulty]} pts
-                    </span>
-                    {isCompleted && (
-                      <span className="text-green-400 text-sm font-bold">✓ Complétée</span>
-                    )}
-                  </div>
-                  <p className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-white'}`}>
-                    {mission.description}
-                  </p>
-                </div>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded ${
+                  difficultyColors[mission.difficulty]
+                } text-white font-bold`}
+              >
+                {difficultyLabels[mission.difficulty]}
+              </span>
 
-                {!isCompleted && (
-                  <Button
-                    onClick={() => handleComplete(mission.id)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1"
-                  >
-                    ✓
-                  </Button>
-                )}
-              </div>
+              <p className={`text-sm flex-1 ${isCompleted ? 'text-gray-500 line-through' : 'text-white'}`}>
+                {mission.description}
+              </p>
+
+              {isCompleted ? (
+                <span className="text-green-400 text-sm">✓</span>
+              ) : (
+                <Button
+                  onClick={() => handleComplete(mission.id)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-0.5 h-6 min-w-0"
+                >
+                  OK
+                </Button>
+              )}
             </div>
           );
         })}
-
-        <div className="mt-4 p-3 bg-blue-950/50 rounded text-center space-y-1">
-          <p className="text-sm text-blue-300 font-semibold">
-            Missions complétées: {completedMissions.size}/{missions.length}
-          </p>
-          <p className="text-xs text-yellow-400">
-            Bonus estimé: +{totalPoints} pts
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
