@@ -258,6 +258,44 @@ export class GameService {
       ORDER BY m.created_at ASC
     `).all(gameId) as Message[];
   }
+
+  // Nettoyer les anciennes parties
+  cleanupOldGames(): { deleted: number; details: string } {
+    // Supprimer les parties terminées (finished)
+    const finishedResult = db.prepare(`
+      DELETE FROM games WHERE status = 'finished'
+    `).run();
+
+    // Supprimer les parties en lobby de plus de 24h
+    const lobbyResult = db.prepare(`
+      DELETE FROM games
+      WHERE status = 'lobby'
+      AND created_at < datetime('now', '-1 day')
+    `).run();
+
+    // Supprimer les parties "playing" abandonnées (plus de 3h)
+    const playingResult = db.prepare(`
+      DELETE FROM games
+      WHERE status = 'playing'
+      AND created_at < datetime('now', '-3 hours')
+    `).run();
+
+    // Supprimer les parties "voting" abandonnées (plus de 1h)
+    const votingResult = db.prepare(`
+      DELETE FROM games
+      WHERE status = 'voting'
+      AND created_at < datetime('now', '-1 hour')
+    `).run();
+
+    const total = finishedResult.changes + lobbyResult.changes + playingResult.changes + votingResult.changes;
+    const details = `finished: ${finishedResult.changes}, old lobby: ${lobbyResult.changes}, abandoned playing: ${playingResult.changes}, abandoned voting: ${votingResult.changes}`;
+
+    if (total > 0) {
+      console.log(`[CLEANUP] Deleted ${total} old games (${details})`);
+    }
+
+    return { deleted: total, details };
+  }
 }
 
 export const gameService = new GameService();
