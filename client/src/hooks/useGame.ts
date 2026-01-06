@@ -34,6 +34,22 @@ export function useGame(gameCode: string | undefined) {
         setPlayers(response.data.players);
         setMessages(response.data.messages || []);
         setError(null);
+
+        // Si la partie a déjà commencé et qu'on n'a pas encore le rôle, le récupérer
+        const gameData = response.data.game;
+        if (gameData.status !== 'lobby' && !myRole) {
+          const sessionId = localStorage.getItem('sessionId');
+          if (sessionId) {
+            try {
+              const roleResponse = await api.get(`/games/${gameCode}/role/${sessionId}`);
+              if (roleResponse.data.role) {
+                setMyRole(roleResponse.data.role);
+              }
+            } catch (roleErr) {
+              console.warn('Impossible de récupérer le rôle:', roleErr);
+            }
+          }
+        }
       } catch (err: any) {
         setError(err.response?.data?.error || 'Erreur de chargement');
       } finally {

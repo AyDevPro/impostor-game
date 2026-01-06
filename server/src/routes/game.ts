@@ -66,4 +66,41 @@ router.get('/:code', (req: Request, res: Response) => {
   }
 });
 
+// GET /api/games/:code/role/:sessionId - Obtenir le rôle d'un joueur
+router.get('/:code/role/:sessionId', (req: Request, res: Response) => {
+  try {
+    const game = gameService.getGameByCode(req.params.code.toUpperCase());
+
+    if (!game) {
+      return res.status(404).json({ error: 'Partie introuvable' });
+    }
+
+    // Récupérer le joueur par sessionId
+    const player = playerService.getPlayerBySessionId(req.params.sessionId);
+    if (!player) {
+      return res.status(404).json({ error: 'Joueur introuvable' });
+    }
+
+    // Récupérer le game_player pour avoir le rôle
+    const players = gameService.getGamePlayers(game.id);
+    const gamePlayer = players.find(p => p.player_id === player.id);
+
+    if (!gamePlayer) {
+      return res.status(404).json({ error: 'Joueur non trouvé dans cette partie' });
+    }
+
+    if (!gamePlayer.role) {
+      return res.status(404).json({ error: 'Rôle non encore attribué' });
+    }
+
+    // Importer les constantes pour les infos du rôle
+    const { ROLES } = require('../utils/constants.js');
+    const roleInfo = ROLES[gamePlayer.role];
+
+    res.json({ role: roleInfo });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
