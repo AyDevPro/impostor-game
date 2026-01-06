@@ -32,7 +32,19 @@ export function useGame(gameCode: string | undefined) {
   const [error, setError] = useState<string | null>(null);
 
   // États pour les mécaniques spéciales
-  const [droideMissions, setDroideMissions] = useState<DroideMission[]>([]);
+  const [droideMissions, setDroideMissions] = useState<DroideMission[]>(() => {
+    if (gameCode) {
+      const stored = localStorage.getItem(`droideMissions_list_${gameCode}`);
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch {
+          return [];
+        }
+      }
+    }
+    return [];
+  });
   const [doubleFaceRevealed, setDoubleFaceRevealed] = useState<{ playerId: number; username: string } | null>(null);
   const [debateStartTime, setDebateStartTime] = useState<string | null>(null);
   const [roleSpecialData, setRoleSpecialData] = useState<RoleSpecialData | null>(() => {
@@ -184,6 +196,10 @@ export function useGame(gameCode: string | undefined) {
     // Événements des mécaniques spéciales
     socket.on('role:droide-missions', ({ missions }: { missions: DroideMission[] }) => {
       setDroideMissions(missions);
+      // Stocker dans localStorage pour persistance
+      if (gameCode) {
+        localStorage.setItem(`droideMissions_list_${gameCode}`, JSON.stringify(missions));
+      }
     });
 
     socket.on('role:double-face-revealed', ({ playerId, username }: { playerId: number; username: string }) => {
