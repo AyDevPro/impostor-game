@@ -8,7 +8,20 @@ export function useGame(gameCode: string | undefined) {
   const [game, setGame] = useState<Game | null>(null);
   const [players, setPlayers] = useState<GamePlayer[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [myRole, setMyRole] = useState<Role | null>(null);
+  // Initialiser myRole depuis localStorage si disponible
+  const [myRole, setMyRole] = useState<Role | null>(() => {
+    if (gameCode) {
+      const storedRole = localStorage.getItem(`role_${gameCode}`);
+      if (storedRole) {
+        try {
+          return JSON.parse(storedRole);
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  });
   const [phaseEndTime, setPhaseEndTime] = useState<string | null>(null);
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
   const [statsSubmitted, setStatsSubmitted] = useState<number>(0);
@@ -35,15 +48,18 @@ export function useGame(gameCode: string | undefined) {
         setMessages(response.data.messages || []);
         setError(null);
 
-        // Si la partie a déjà commencé et qu'on n'a pas encore le rôle, le récupérer
+        // Si la partie a déjà commencé et qu'on n'a pas de rôle, le récupérer depuis l'API
         const gameData = response.data.game;
-        if (gameData.status !== 'lobby' && !myRole) {
+        const storedRole = localStorage.getItem(`role_${gameCode}`);
+        if (gameData.status !== 'lobby' && !storedRole) {
           const sessionId = localStorage.getItem('sessionId');
           if (sessionId) {
             try {
               const roleResponse = await api.get(`/games/${gameCode}/role/${sessionId}`);
               if (roleResponse.data.role) {
                 setMyRole(roleResponse.data.role);
+                // Stocker dans localStorage pour les prochaines fois
+                localStorage.setItem(`role_${gameCode}`, JSON.stringify(roleResponse.data.role));
               }
             } catch (roleErr) {
               console.warn('Impossible de récupérer le rôle:', roleErr);
@@ -95,9 +111,13 @@ export function useGame(gameCode: string | undefined) {
       setGame(prev => prev ? { ...prev, status: status as any } : null);
     });
 
-    socket.on('game:started', ({ role, phaseEndTime }: { role: Role; phaseEndTime: string }) => {
+    socket.on('game:started', ({ role, phaseEndTime: endTime }: { role: Role; phaseEndTime: string }) => {
       setMyRole(role);
-      setPhaseEndTime(phaseEndTime);
+      setPhaseEndTime(endTime);
+      // Stocker le rôle dans localStorage pour le récupérer après navigation
+      if (gameCode) {
+        localStorage.setItem(`role_${gameCode}`, JSON.stringify(role));
+      }
     });
 
     socket.on('game:phase-change', ({ phase, endTime }: { phase: string; endTime?: string }) => {
