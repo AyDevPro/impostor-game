@@ -144,8 +144,6 @@ export function setupSocket(io: Server) {
       // Démarrer la partie
       gameService.startGame(game.id, roleAssignments);
 
-      const phaseEndTime = new Date(Date.now() + GAME_CONFIG.DEBATE_DURATION_MS).toISOString();
-
       // Notifier tout le lobby que le jeu démarre
       io.to(gameCode).emit('game:status-changed', { status: 'playing' });
       console.log(`[GAME START] Emitted game:status-changed to room ${gameCode}`);
@@ -166,7 +164,7 @@ export function setupSocket(io: Server) {
 
         if (playerSocket) {
           console.log(`[GAME START] Sending role ${roleId} to player ${player.username}(${player.player_id})`);
-          playerSocket.emit('game:started', { role, phaseEndTime });
+          playerSocket.emit('game:started', { role });
 
           // Si c'est un Droide, lui envoyer 3 missions
           if (roleId === 'droide') {
@@ -180,21 +178,32 @@ export function setupSocket(io: Server) {
       }
 
       console.log(`[GAME START] ✅ Role distribution completed for game ${gameCode}`);
+      // Les joueurs voient leur rôle, l'hôte devra cliquer pour passer à la phase stats
+    });
 
-      // Programmer le passage à la phase de vote
-      setTimeout(() => {
-        const updatedGame = gameService.getGameByCode(gameCode);
-        if (updatedGame && updatedGame.current_phase === 'debate') {
-          gameService.startVotePhase(updatedGame.id);
-          const voteEndTime = new Date(Date.now() + GAME_CONFIG.VOTE_DURATION_MS).toISOString();
-          io.to(gameCode).emit('game:phase-change', { phase: 'vote', endTime: voteEndTime });
+    // L'hôte lance la phase de soumission des stats
+    socket.on('game:start-stats', ({ gameCode }) => {
+      const game = gameService.getGameByCode(gameCode);
+      if (!game) {
+        socket.emit('error', { message: 'Partie introuvable' });
+        return;
+      }
 
-          // Programmer la fin du vote
-          setTimeout(() => {
-            endVotePhase(gameCode, game.id, io);
-          }, GAME_CONFIG.VOTE_DURATION_MS);
-        }
-      }, GAME_CONFIG.DEBATE_DURATION_MS);
+      // Vérifier que c'est bien l'hôte
+      if (game.host_id !== authSocket.playerId) {
+        socket.emit('error', { message: 'Seul l\'hôte peut lancer la phase de stats' });
+        return;
+      }
+
+      // Vérifier que la partie est en cours et sans phase
+      if (game.status !== 'playing' || game.current_phase !== null) {
+        socket.emit('error', { message: 'La partie n\'est pas dans le bon état' });
+        return;
+      }
+
+      // Passer à la phase stats
+      gameService.startStatsPhase(game.id);
+      io.to(gameCode).emit('game:phase-change', { phase: 'stats' });
     });
 
     // Soumettre les stats LoL

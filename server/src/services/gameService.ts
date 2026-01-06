@@ -115,16 +115,14 @@ export class GameService {
     return result.total >= GAME_CONFIG.MIN_PLAYERS && result.total === result.ready;
   }
 
-  // Démarrer la partie
+  // Démarrer la partie (attribution des rôles, pas de phase encore)
   startGame(gameId: number, roleAssignments: Map<number, string>): void {
-    const phaseEndTime = new Date(Date.now() + GAME_CONFIG.DEBATE_DURATION_MS).toISOString();
-
-    // Mettre à jour le statut de la partie
+    // Mettre à jour le statut de la partie (pas de phase, les joueurs voient leur rôle)
     db.prepare(`
       UPDATE games
-      SET status = 'playing', current_phase = 'debate', phase_end_time = ?
+      SET status = 'playing', current_phase = NULL
       WHERE id = ?
-    `).run(phaseEndTime, gameId);
+    `).run(gameId);
 
     // Attribuer les rôles
     const updateRole = db.prepare(
@@ -134,6 +132,15 @@ export class GameService {
     for (const [playerId, role] of roleAssignments) {
       updateRole.run(role, gameId, playerId);
     }
+  }
+
+  // Passer à la phase de stats (l'hôte déclenche)
+  startStatsPhase(gameId: number): void {
+    db.prepare(`
+      UPDATE games
+      SET current_phase = 'stats'
+      WHERE id = ?
+    `).run(gameId);
   }
 
   // Passer à la phase de débat

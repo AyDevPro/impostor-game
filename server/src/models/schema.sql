@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS games (
     code TEXT UNIQUE NOT NULL,
     host_id INTEGER NOT NULL,
     status TEXT DEFAULT 'lobby' CHECK(status IN ('lobby', 'playing', 'voting', 'finished')),
-    current_phase TEXT DEFAULT NULL CHECK(current_phase IN (NULL, 'debate', 'vote', 'reveal')),
+    current_phase TEXT DEFAULT NULL CHECK(current_phase IN (NULL, 'stats', 'debate', 'vote', 'reveal')),
     phase_end_time DATETIME DEFAULT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     finished_at DATETIME DEFAULT NULL,

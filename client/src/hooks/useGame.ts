@@ -111,9 +111,8 @@ export function useGame(gameCode: string | undefined) {
       setGame(prev => prev ? { ...prev, status: status as any } : null);
     });
 
-    socket.on('game:started', ({ role, phaseEndTime: endTime }: { role: Role; phaseEndTime: string }) => {
+    socket.on('game:started', ({ role }: { role: Role }) => {
       setMyRole(role);
-      setPhaseEndTime(endTime);
       // Stocker le rôle dans localStorage pour le récupérer après navigation
       if (gameCode) {
         localStorage.setItem(`role_${gameCode}`, JSON.stringify(role));
@@ -203,6 +202,12 @@ export function useGame(gameCode: string | undefined) {
     }
   }, [socket, gameCode]);
 
+  const startStats = useCallback(() => {
+    if (socket && gameCode) {
+      socket.emit('game:start-stats', { gameCode });
+    }
+  }, [socket, gameCode]);
+
   const submitGuesses = useCallback((guesses: RoleGuessInput[]) => {
     if (socket && gameCode) {
       socket.emit('guesses:submit', { gameCode, guesses });
@@ -254,6 +259,7 @@ export function useGame(gameCode: string | undefined) {
     toggleReady,
     sendMessage,
     startGame,
+    startStats,
     submitStats,
     submitGuesses,
     leaveGame,

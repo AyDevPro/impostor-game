@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useGame } from '../hooks/useGame';
@@ -35,13 +34,12 @@ export function Game() {
     doubleFaceRevealed,
     debateStartTime,
     sendMessage,
+    startStats,
     submitStats,
     submitGuesses,
     revealDoubleFace,
     completeDroideMission
   } = useGame(code);
-
-  const [showStatsForm, setShowStatsForm] = useState(false);
 
   if (isLoading) {
     return (
@@ -297,8 +295,8 @@ export function Game() {
     );
   }
 
-  // Phase de jeu (League of Legends en cours) - Formulaire de stats
-  if (game.status === 'playing' && game.current_phase === null && showStatsForm) {
+  // Phase de stats - Formulaire
+  if (game.status === 'playing' && game.current_phase === 'stats' && !hasSubmittedStats) {
     return (
       <div className="min-h-screen p-4">
         <header className="max-w-4xl mx-auto py-4">
@@ -309,7 +307,6 @@ export function Game() {
           <StatsForm
             onSubmit={(stats) => {
               submitStats(stats);
-              setShowStatsForm(false);
             }}
             disabled={hasSubmittedStats}
           />
@@ -318,8 +315,8 @@ export function Game() {
     );
   }
 
-  // Phase de jeu - Attente des stats
-  if (game.status === 'playing' && game.current_phase === null && hasSubmittedStats) {
+  // Phase de stats - Attente des autres joueurs
+  if (game.status === 'playing' && game.current_phase === 'stats' && hasSubmittedStats) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-2xl w-full">
@@ -352,7 +349,12 @@ export function Game() {
     );
   }
 
-  // Phase de jeu (League of Legends en cours)
+  // Déterminer si le joueur actuel est l'hôte (pour la phase de rôle)
+  const currentUsernameForRole = localStorage.getItem('username');
+  const currentPlayerForRole = players.find(p => p.username === currentUsernameForRole);
+  const isHostForRole = game?.host_id === currentPlayerForRole?.player_id;
+
+  // Phase de jeu (League of Legends en cours) - Les joueurs voient leur rôle
   if (game.status === 'playing' && game.current_phase === null) {
     return (
       <div className="min-h-screen p-4">
@@ -437,14 +439,20 @@ export function Game() {
                 </p>
               </div>
 
-              {/* Bouton pour soumettre les stats */}
-              <Button
-                size="lg"
-                className="text-xl py-4 px-8"
-                onClick={() => setShowStatsForm(true)}
-              >
-                ✅ Ma partie LoL est terminée - Soumettre mes stats
-              </Button>
+              {/* Bouton pour passer à la phase stats - Seulement pour l'hôte */}
+              {isHostForRole ? (
+                <Button
+                  size="lg"
+                  className="text-xl py-4 px-8"
+                  onClick={startStats}
+                >
+                  🏁 Fin de la partie LoL - Passer aux stats
+                </Button>
+              ) : (
+                <div className="text-gray-400 text-center">
+                  <p>En attente que l'hôte termine la partie LoL...</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

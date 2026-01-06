@@ -19,7 +19,7 @@ export interface Player {
 
 // Game types
 export type GameStatus = 'lobby' | 'playing' | 'voting' | 'finished';
-export type GamePhase = 'debate' | 'vote' | 'reveal' | null;
+export type GamePhase = 'stats' | 'debate' | 'vote' | 'reveal' | null;
 
 export interface Game {
   id: number;
