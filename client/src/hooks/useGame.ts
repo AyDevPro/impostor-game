@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSocket } from '../context/SocketContext';
-import { Game, GamePlayer, Message, Role, GameResult, PlayerStats, RoleGuessInput, DroideMission } from '../types';
+import { Game, GamePlayer, Message, Role, GameResult, PlayerStats, RoleGuessInput, DroideMission, RoleSpecialData } from '../types';
 import api from '../api/axios';
 
 export function useGame(gameCode: string | undefined) {
@@ -35,6 +35,19 @@ export function useGame(gameCode: string | undefined) {
   const [droideMissions, setDroideMissions] = useState<DroideMission[]>([]);
   const [doubleFaceRevealed, setDoubleFaceRevealed] = useState<{ playerId: number; username: string } | null>(null);
   const [debateStartTime, setDebateStartTime] = useState<string | null>(null);
+  const [roleSpecialData, setRoleSpecialData] = useState<RoleSpecialData | null>(() => {
+    if (gameCode) {
+      const stored = localStorage.getItem(`roleSpecialData_${gameCode}`);
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  });
 
   // Charger les données initiales
   useEffect(() => {
@@ -111,11 +124,16 @@ export function useGame(gameCode: string | undefined) {
       setGame(prev => prev ? { ...prev, status: status as any } : null);
     });
 
-    socket.on('game:started', ({ role }: { role: Role }) => {
+    socket.on('game:started', ({ role, specialData }: { role: Role; specialData?: RoleSpecialData }) => {
       setMyRole(role);
       // Stocker le rôle dans localStorage pour le récupérer après navigation
       if (gameCode) {
         localStorage.setItem(`role_${gameCode}`, JSON.stringify(role));
+        // Stocker les données spéciales si présentes
+        if (specialData) {
+          setRoleSpecialData(specialData);
+          localStorage.setItem(`roleSpecialData_${gameCode}`, JSON.stringify(specialData));
+        }
       }
     });
 
@@ -256,6 +274,7 @@ export function useGame(gameCode: string | undefined) {
     droideMissions,
     doubleFaceRevealed,
     debateStartTime,
+    roleSpecialData,
     toggleReady,
     sendMessage,
     startGame,

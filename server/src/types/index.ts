@@ -65,6 +65,15 @@ export interface Role {
   points: number;
 }
 
+// Données spéciales envoyées avec certains rôles
+export interface RoleSpecialData {
+  // Double-Face : alignement
+  alignment?: 'gentil' | 'mechant';
+  // Roméo : id et nom de Juliette
+  julietteId?: number;
+  julietteName?: string;
+}
+
 // Role Guess types
 export interface RoleGuess {
   id: number;

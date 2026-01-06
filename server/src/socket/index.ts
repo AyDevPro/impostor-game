@@ -153,6 +153,18 @@ export function setupSocket(io: Server) {
       console.log(`[GAME START] Found ${connectedSockets.length} connected sockets in room ${gameCode}`);
       console.log(`[GAME START] Socket player IDs:`, connectedSockets.map(s => (s as any).playerId).join(', '));
 
+      // Préparer les données spéciales pour certains rôles
+      // Trouver le Roméo et lui assigner une Juliette aléatoire parmi les autres joueurs
+      const romeoPlayer = players.find(p => roleAssignments.get(p.player_id) === 'romeo');
+      let julietteForRomeo: { id: number; name: string } | null = null;
+      if (romeoPlayer) {
+        const otherPlayers = players.filter(p => p.player_id !== romeoPlayer.player_id);
+        if (otherPlayers.length > 0) {
+          const randomJuliette = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+          julietteForRomeo = { id: randomJuliette.player_id, name: randomJuliette.username };
+        }
+      }
+
       for (const player of players) {
         const roleId = roleAssignments.get(player.player_id) as RoleId;
         const role = ROLES[roleId];
@@ -164,7 +176,26 @@ export function setupSocket(io: Server) {
 
         if (playerSocket) {
           console.log(`[GAME START] Sending role ${roleId} to player ${player.username}(${player.player_id})`);
-          playerSocket.emit('game:started', { role });
+
+          // Préparer les données spéciales selon le rôle
+          let specialData: { alignment?: string; julietteId?: number; julietteName?: string } | undefined;
+
+          if (roleId === 'double_face') {
+            // Alignement aléatoire pour Double-Face
+            specialData = {
+              alignment: Math.random() > 0.5 ? 'gentil' : 'mechant'
+            };
+            console.log(`[GAME START] Double-Face ${player.username} is ${specialData.alignment}`);
+          } else if (roleId === 'romeo' && julietteForRomeo) {
+            // Juliette assignée pour Roméo
+            specialData = {
+              julietteId: julietteForRomeo.id,
+              julietteName: julietteForRomeo.name
+            };
+            console.log(`[GAME START] Romeo ${player.username}'s Juliette is ${julietteForRomeo.name}`);
+          }
+
+          playerSocket.emit('game:started', { role, specialData });
 
           // Si c'est un Droide, lui envoyer 3 missions
           if (roleId === 'droide') {

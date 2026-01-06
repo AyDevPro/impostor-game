@@ -12,6 +12,8 @@ import { StatsForm } from '../components/StatsForm';
 import { DoubleFaceReveal } from '../components/DoubleFaceReveal';
 import { DroideMissions } from '../components/DroideMissions';
 import { DoubleFaceNotification } from '../components/DoubleFaceNotification';
+import { ROLES } from '../utils/constants';
+import { RoleId } from '../types';
 
 export function Game() {
   const { code } = useParams<{ code: string }>();
@@ -33,6 +35,7 @@ export function Game() {
     droideMissions,
     doubleFaceRevealed,
     debateStartTime,
+    roleSpecialData,
     sendMessage,
     startStats,
     submitStats,
@@ -100,48 +103,74 @@ export function Game() {
               <div className="space-y-4">
                 {gameResult?.points
                   .sort((a, b) => b.points - a.points)
-                  .map((player, index) => (
-                    <div
-                      key={player.userId}
-                      className="p-4 rounded-lg bg-gray-700/50 border border-gray-600"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <span className={`text-2xl font-bold ${
-                            index === 0 ? 'text-yellow-400' :
-                            index === 1 ? 'text-gray-300' :
-                            index === 2 ? 'text-orange-400' : 'text-gray-500'
-                          }`}>
-                            #{index + 1}
-                          </span>
-                          <div>
-                            <div className="font-medium text-white">{player.username}</div>
-                            <div className="text-sm text-gray-400 capitalize">
-                              {player.role.replace('_', '-')}
+                  .map((player, index) => {
+                    const roleInfo = ROLES[player.role as RoleId];
+                    const objectiveSuccess = player.breakdown && player.breakdown.statsBonus >= 0;
+
+                    return (
+                      <div
+                        key={player.userId}
+                        className="p-4 rounded-lg bg-gray-700/50 border border-gray-600"
+                        style={{ borderLeftColor: roleInfo?.color, borderLeftWidth: '4px' }}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <span className={`text-2xl font-bold ${
+                              index === 0 ? 'text-yellow-400' :
+                              index === 1 ? 'text-gray-300' :
+                              index === 2 ? 'text-orange-400' : 'text-gray-500'
+                            }`}>
+                              #{index + 1}
+                            </span>
+                            <div>
+                              <div className="font-medium text-white flex items-center gap-2">
+                                {player.username}
+                                {player.breakdown && (
+                                  <span className={`text-xs px-2 py-0.5 rounded ${
+                                    objectiveSuccess
+                                      ? 'bg-green-900/50 text-green-400'
+                                      : 'bg-red-900/50 text-red-400'
+                                  }`}>
+                                    {objectiveSuccess ? '✓ Objectif' : '✗ Échoué'}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm capitalize" style={{ color: roleInfo?.color }}>
+                                {roleInfo?.name || player.role.replace('_', '-')}
+                              </div>
                             </div>
                           </div>
+                          <span className="text-xl font-bold text-yellow-400">
+                            {player.points} pts
+                          </span>
                         </div>
-                        <span className="text-xl font-bold text-yellow-400">
-                          {player.points} pts
-                        </span>
-                      </div>
 
-                      {/* Breakdown des points */}
-                      {player.breakdown && (
-                        <div className="flex gap-4 text-sm mt-3 pt-3 border-t border-gray-600">
-                          <div className="text-gray-400">
-                            Base: <span className="text-white">{player.breakdown.base}</span>
+                        {/* Objectif du rôle */}
+                        {roleInfo && (
+                          <div className="text-xs text-gray-500 mb-2 italic">
+                            Objectif : {roleInfo.objective}
                           </div>
-                          <div className="text-gray-400">
-                            Devinettes: <span className="text-green-400">+{player.breakdown.guessBonus}</span>
+                        )}
+
+                        {/* Breakdown des points */}
+                        {player.breakdown && (
+                          <div className="flex gap-4 text-sm mt-3 pt-3 border-t border-gray-600">
+                            <div className="text-gray-400">
+                              Base: <span className="text-white">{player.breakdown.base}</span>
+                            </div>
+                            <div className="text-gray-400">
+                              Devinettes: <span className="text-green-400">+{player.breakdown.guessBonus}</span>
+                            </div>
+                            <div className="text-gray-400">
+                              Stats: <span className={player.breakdown.statsBonus >= 0 ? 'text-blue-400' : 'text-red-400'}>
+                                {player.breakdown.statsBonus >= 0 ? '+' : ''}{player.breakdown.statsBonus}
+                              </span>
+                            </div>
                           </div>
-                          <div className="text-gray-400">
-                            Stats: <span className="text-blue-400">+{player.breakdown.statsBonus}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        )}
+                      </div>
+                    );
+                  })}
               </div>
             </CardContent>
           </Card>
@@ -421,6 +450,43 @@ export function Game() {
             />
           )}
 
+          {/* Alignement Double-Face */}
+          {myRole?.id === 'double_face' && roleSpecialData?.alignment && (
+            <Card className={`border-2 ${roleSpecialData.alignment === 'gentil' ? 'border-green-500 bg-green-900/20' : 'border-red-500 bg-red-900/20'}`}>
+              <CardContent className="py-6 text-center">
+                <div className="text-4xl mb-3">
+                  {roleSpecialData.alignment === 'gentil' ? '😇' : '😈'}
+                </div>
+                <h3 className={`text-2xl font-bold mb-2 ${roleSpecialData.alignment === 'gentil' ? 'text-green-400' : 'text-red-400'}`}>
+                  Tu es {roleSpecialData.alignment === 'gentil' ? 'GENTIL' : 'MÉCHANT'}
+                </h3>
+                <p className="text-gray-300">
+                  {roleSpecialData.alignment === 'gentil'
+                    ? 'Tu gagnes si ton équipe GAGNE la partie LoL !'
+                    : 'Tu gagnes si ton équipe PERD la partie LoL !'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Juliette pour Roméo */}
+          {myRole?.id === 'romeo' && roleSpecialData?.julietteName && (
+            <Card className="border-2 border-pink-500 bg-pink-900/20">
+              <CardContent className="py-6 text-center">
+                <div className="text-4xl mb-3">💕</div>
+                <h3 className="text-2xl font-bold mb-2 text-pink-400">
+                  Ta Juliette est : {roleSpecialData.julietteName}
+                </h3>
+                <p className="text-gray-300">
+                  Si elle meurt en jeu, tu as 1 minute pour te suicider !
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  (Elle peut être dans ton équipe ou l'équipe adverse)
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Instructions */}
           <Card>
             <CardContent className="text-center py-8">
@@ -521,6 +587,28 @@ export function Game() {
               debateStartTime={debateStartTime}
               onReveal={revealDoubleFace}
             />
+          )}
+
+          {/* Alignement Double-Face (rappel) */}
+          {myRole?.id === 'double_face' && roleSpecialData?.alignment && (
+            <Card className={`border ${roleSpecialData.alignment === 'gentil' ? 'border-green-500' : 'border-red-500'}`}>
+              <CardContent className="py-3 text-center">
+                <span className={`font-bold ${roleSpecialData.alignment === 'gentil' ? 'text-green-400' : 'text-red-400'}`}>
+                  {roleSpecialData.alignment === 'gentil' ? '😇 GENTIL' : '😈 MÉCHANT'}
+                </span>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Juliette pour Roméo (rappel) */}
+          {myRole?.id === 'romeo' && roleSpecialData?.julietteName && (
+            <Card className="border border-pink-500">
+              <CardContent className="py-3 text-center">
+                <span className="text-pink-400 font-bold">
+                  💕 Juliette : {roleSpecialData.julietteName}
+                </span>
+              </CardContent>
+            </Card>
           )}
 
           {/* Liste des joueurs */}
