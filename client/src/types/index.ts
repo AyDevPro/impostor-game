@@ -136,5 +136,4 @@ export interface PlayerStats {
 export interface DroideMission {
   id: string;
   description: string;
-  difficulty: 'easy' | 'medium' | 'hard';
 }

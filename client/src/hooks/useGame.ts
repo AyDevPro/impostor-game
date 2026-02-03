@@ -195,11 +195,15 @@ export function useGame(gameCode: string | undefined) {
 
     // Événements des mécaniques spéciales
     socket.on('role:droide-missions', ({ missions }: { missions: DroideMission[] }) => {
-      setDroideMissions(missions);
-      // Stocker dans localStorage pour persistance
-      if (gameCode) {
-        localStorage.setItem(`droideMissions_list_${gameCode}`, JSON.stringify(missions));
-      }
+      // Ajouter les nouvelles missions à la liste existante
+      setDroideMissions(prev => {
+        const updated = [...prev, ...missions];
+        // Stocker dans localStorage pour persistance
+        if (gameCode) {
+          localStorage.setItem(`droideMissions_list_${gameCode}`, JSON.stringify(updated));
+        }
+        return updated;
+      });
     });
 
     socket.on('role:double-face-revealed', ({ playerId, username }: { playerId: number; username: string }) => {

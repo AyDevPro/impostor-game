@@ -26,6 +26,40 @@ export function setupSocket(io: Server) {
   // Map pour stocker les timestamps de début de phase débat par partie
   const debateStartTimes = new Map<string, number>();
 
+  // Map pour stocker les timers de missions du droide et le compteur de missions envoyées
+  const droideMissionTimers = new Map<string, { timers: NodeJS.Timeout[], missionCount: number, usedMissionIds: Set<string> }>();
+
+  // Fonction helper pour envoyer une mission au droide
+  const sendDroideMission = (gameCode: string, playerSocketId: string, username: string) => {
+    const missionData = droideMissionTimers.get(gameCode);
+    if (!missionData) return;
+
+    // Vérifier si on a atteint le maximum de 4 missions
+    if (missionData.missionCount >= 4) {
+      console.log(`[DROIDE MISSION] Maximum missions (4) reached for game ${gameCode}`);
+      return;
+    }
+
+    // Générer une nouvelle mission qui n'a pas encore été envoyée
+    const allMissions = generateMissions(20); // Générer plus que nécessaire pour éviter les doublons
+    const availableMissions = allMissions.filter(m => !missionData.usedMissionIds.has(m.id));
+
+    if (availableMissions.length === 0) {
+      console.log(`[DROIDE MISSION] No more unique missions available for game ${gameCode}`);
+      return;
+    }
+
+    const mission = availableMissions[0];
+    missionData.usedMissionIds.add(mission.id);
+    missionData.missionCount++;
+
+    const playerSocket = io.sockets.sockets.get(playerSocketId);
+    if (playerSocket) {
+      playerSocket.emit('role:droide-missions', { missions: [mission] });
+      console.log(`[DROIDE MISSION] Sent mission ${missionData.missionCount}/4 to Droide ${username}: "${mission.description}"`);
+    }
+  };
+
   // Middleware d'authentification avec pseudo et session
   io.use((socket, next) => {
     const { username, sessionId } = socket.handshake.auth;
@@ -201,11 +235,29 @@ export function setupSocket(io: Server) {
 
           playerSocket.emit('game:started', { role, specialData, gameStartTime });
 
-          // Si c'est un Droide, lui envoyer 3 missions
+          // Si c'est un Droide, lui envoyer la première mission et programmer les suivantes
           if (roleId === 'droide') {
-            const missions = generateMissions(3);
-            playerSocket.emit('role:droide-missions', { missions });
-            console.log(`[GAME START] Sent ${missions.length} missions to Droide ${player.username}`);
+            // Initialiser ou récupérer la structure de données pour ce jeu
+            if (!droideMissionTimers.has(gameCode)) {
+              droideMissionTimers.set(gameCode, { timers: [], missionCount: 0, usedMissionIds: new Set() });
+            }
+
+            // Envoyer la première mission immédiatement
+            sendDroideMission(gameCode, playerSocket.id, player.username);
+
+            // Programmer l'envoi des missions suivantes toutes les 5 minutes (max 4 missions au total)
+            const missionData = droideMissionTimers.get(gameCode)!;
+            const MISSION_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+            for (let i = 1; i < 4; i++) {
+              const timer = setTimeout(() => {
+                sendDroideMission(gameCode, playerSocket.id, player.username);
+              }, i * MISSION_INTERVAL_MS);
+
+              missionData.timers.push(timer);
+            }
+
+            console.log(`[GAME START] Droide mission system initialized for ${player.username}. First mission sent, 3 more scheduled.`);
           }
         } else {
           console.warn(`[GAME START] ❌ Socket not found for player ${player.player_id} (${player.username})`);
@@ -286,7 +338,7 @@ export function setupSocket(io: Server) {
 
               // Programmer la fin du vote
               setTimeout(() => {
-                endVotePhase(gameCode, game.id, io);
+                endVotePhase(gameCode, game.id, io, droideMissionTimers);
               }, GAME_CONFIG.VOTE_DURATION_MS);
             }
           }, GAME_CONFIG.DEBATE_DURATION_MS);
@@ -322,7 +374,7 @@ export function setupSocket(io: Server) {
 
         // Vérifier si tout le monde a soumis ses devinettes
         if (guessService.haveAllPlayersGuessed(game.id)) {
-          endGuessPhase(gameCode, game.id, io, guessService);
+          endGuessPhase(gameCode, game.id, io, guessService, droideMissionTimers);
         }
       } catch (error: any) {
         socket.emit('error', { message: error.message });
@@ -467,7 +519,7 @@ export function setupSocket(io: Server) {
       setTimeout(() => {
         // Vérifier si tous les joueurs ont voté
         if (guessService.haveAllPlayersGuessed(game.id)) {
-          endGuessPhase(gameCode, game.id, io, guessService);
+          endGuessPhase(gameCode, game.id, io, guessService, droideMissionTimers);
         }
       }, GAME_CONFIG.VOTE_DURATION_MS);
     });
@@ -480,7 +532,12 @@ export function setupSocket(io: Server) {
 }
 
 // Fonction pour terminer automatiquement la phase de vote
-function endVotePhase(gameCode: string, gameId: number, io: Server) {
+function endVotePhase(
+  gameCode: string,
+  gameId: number,
+  io: Server,
+  droideMissionTimers: Map<string, { timers: NodeJS.Timeout[], missionCount: number, usedMissionIds: Set<string> }>
+) {
   const game = gameService.getGameByCode(gameCode);
   if (!game || game.current_phase !== 'vote') {
     return;
@@ -491,14 +548,20 @@ function endVotePhase(gameCode: string, gameId: number, io: Server) {
   // Vérifier si tout le monde a soumis ses guesses
   if (guessServiceInstance.haveAllPlayersGuessed(gameId)) {
     // Si oui, terminer normalement
-    endGuessPhase(gameCode, gameId, io, guessServiceInstance);
+    endGuessPhase(gameCode, gameId, io, guessServiceInstance, droideMissionTimers);
   } else {
     // Sinon, forcer la fin du vote et terminer avec les guesses disponibles
-    endGuessPhase(gameCode, gameId, io, guessServiceInstance);
+    endGuessPhase(gameCode, gameId, io, guessServiceInstance, droideMissionTimers);
   }
 }
 
-function endGuessPhase(gameCode: string, gameId: number, io: Server, guessService: GuessService) {
+function endGuessPhase(
+  gameCode: string,
+  gameId: number,
+  io: Server,
+  guessService: GuessService,
+  droideMissionTimers: Map<string, { timers: NodeJS.Timeout[], missionCount: number, usedMissionIds: Set<string> }>
+) {
   const players = gameService.getGamePlayers(gameId);
   const guesses = guessService.getGameGuesses(gameId);
 
@@ -555,7 +618,9 @@ function endGuessPhase(gameCode: string, gameId: number, io: Server, guessServic
     // Compter les missions Droide complétées
     if (p.role === 'droide') {
       actions.droideMissionsCompleted = roleActionsServiceInstance.countDroideMissionsCompleted(gameId, p.player_id);
-      actions.droideTotalMissions = 3; // Nombre total de missions assignées
+      // Récupérer le nombre réel de missions envoyées pour cette partie
+      const missionData = droideMissionTimers.get(gameCode);
+      actions.droideTotalMissions = missionData?.missionCount || 0;
     }
 
     // Pour Roméo: vérifier si le rôle a été respecté
@@ -628,6 +693,14 @@ function endGuessPhase(gameCode: string, gameId: number, io: Server, guessServic
   });
 
   const impostor = players.find(p => p.role === 'imposteur');
+
+  // Nettoyer les timers de missions du droide pour cette partie
+  const missionData = droideMissionTimers.get(gameCode);
+  if (missionData) {
+    missionData.timers.forEach(timer => clearTimeout(timer));
+    droideMissionTimers.delete(gameCode);
+    console.log(`[GAME END] Cleaned up ${missionData.timers.length} droide mission timers for game ${gameCode}`);
+  }
 
   io.to(gameCode).emit('game:ended', {
     players: players.map(p => ({ ...p, role: p.role! })),

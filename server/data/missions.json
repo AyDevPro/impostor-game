@@ -1,124 +1,84 @@
 {
   "missions": [
     {
-      "id": "easy_1",
-      "description": "Achète des Bottes en premier objet",
-      "difficulty": "easy"
+      "id": "mission_1",
+      "description": "Pose une Pink Ward au spawn"
     },
     {
-      "id": "easy_2",
-      "description": "Ne farm PAS la jungle pendant 5 minutes",
-      "difficulty": "easy"
+      "id": "mission_2",
+      "description": "Force pour faire un objectif (Drake/Baron/Herald)"
     },
     {
-      "id": "easy_3",
-      "description": "Spam ping \"En route\" 3 fois de suite",
-      "difficulty": "easy"
+      "id": "mission_3",
+      "description": "Achète un item tank"
     },
     {
-      "id": "easy_4",
-      "description": "Écris \"gg\" dans le chat toutes les 3 minutes",
-      "difficulty": "easy"
+      "id": "mission_4",
+      "description": "Vole un camp à ton jungler OU une wave à un laner"
     },
     {
-      "id": "easy_5",
-      "description": "Achète une Potion de Contrôle (Pink Ward)",
-      "difficulty": "easy"
+      "id": "mission_5",
+      "description": "Achète le même item qu'un coéquipier"
     },
     {
-      "id": "easy_6",
-      "description": "Utilise ton emote après chaque kill",
-      "difficulty": "easy"
+      "id": "mission_6",
+      "description": "Lance un débat sur qui est l'imposteur"
     },
     {
-      "id": "easy_7",
-      "description": "Ne lance PAS ton ultimate pendant 5 minutes",
-      "difficulty": "easy"
+      "id": "mission_7",
+      "description": "Reste AFK 20 secondes à la base"
     },
     {
-      "id": "easy_8",
-      "description": "Tape dans une tourelle au moins une fois",
-      "difficulty": "easy"
+      "id": "mission_8",
+      "description": "Spam ping \"En route\" 5 fois de suite"
     },
     {
-      "id": "medium_1",
-      "description": "Vole un objectif neutre (Drake/Baron/Herald)",
-      "difficulty": "medium"
+      "id": "mission_9",
+      "description": "Ne retourne PAS à la base pendant 8 minutes"
     },
     {
-      "id": "medium_2",
-      "description": "Meurs exactement 3 fois (pas plus, pas moins)",
-      "difficulty": "medium"
+      "id": "mission_10",
+      "description": "Meurs au moins 2 fois avant 10 minutes"
     },
     {
-      "id": "medium_3",
-      "description": "Termine avec exactement 100 CS (+/- 10)",
-      "difficulty": "medium"
+      "id": "mission_11",
+      "description": "Écris \"gg\" dans le chat 3 fois pendant la partie"
     },
     {
-      "id": "medium_4",
-      "description": "Ne retourne PAS à la base avant 10 minutes",
-      "difficulty": "medium"
+      "id": "mission_12",
+      "description": "Ne farm PAS la jungle pendant 7 minutes"
     },
     {
-      "id": "medium_5",
-      "description": "Obtiens un double kill",
-      "difficulty": "medium"
+      "id": "mission_13",
+      "description": "Achète des Bottes en dernier objet"
     },
     {
-      "id": "medium_6",
-      "description": "Fais au moins 10 assists",
-      "difficulty": "medium"
+      "id": "mission_14",
+      "description": "Vole le premier buff de ton jungler"
     },
     {
-      "id": "medium_7",
-      "description": "Détruis au moins 2 tourelles",
-      "difficulty": "medium"
+      "id": "mission_15",
+      "description": "Utilise ton emote après chaque mort"
     },
     {
-      "id": "medium_8",
-      "description": "Ne meurs PAS avant 10 minutes",
-      "difficulty": "medium"
+      "id": "mission_16",
+      "description": "Ne lance PAS ton ultime avant 12 minutes"
     },
     {
-      "id": "hard_1",
-      "description": "Fais un pentakill OU vole le Baron",
-      "difficulty": "hard"
+      "id": "mission_17",
+      "description": "Tape volontairement dans une tourelle ennemie"
     },
     {
-      "id": "hard_2",
-      "description": "Termine avec le MOINS de dégâts de ton équipe",
-      "difficulty": "hard"
+      "id": "mission_18",
+      "description": "Garde ton Flash jusqu'à 15 minutes de jeu"
     },
     {
-      "id": "hard_3",
-      "description": "Place 15 wards pendant la partie",
-      "difficulty": "hard"
+      "id": "mission_19",
+      "description": "Achète un objet AP si tu es AD (ou inversement)"
     },
     {
-      "id": "hard_4",
-      "description": "Gagne sans acheter d'objet Mythique/Légendaire",
-      "difficulty": "hard"
-    },
-    {
-      "id": "hard_5",
-      "description": "Fais 5 kills sans mourir (killing spree)",
-      "difficulty": "hard"
-    },
-    {
-      "id": "hard_6",
-      "description": "Fais le premier sang de la partie",
-      "difficulty": "hard"
-    },
-    {
-      "id": "hard_7",
-      "description": "Termine avec 0 morts",
-      "difficulty": "hard"
-    },
-    {
-      "id": "hard_8",
-      "description": "Fais plus de 30% des dégâts de ton équipe",
-      "difficulty": "hard"
+      "id": "mission_20",
+      "description": "Reste dans un bush pendant 30 secondes d'affilée"
     }
   ]
 }

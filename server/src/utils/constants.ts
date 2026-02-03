@@ -12,8 +12,8 @@ export const ROLES: Record<RoleId, Role> = {
   droide: {
     id: 'droide',
     name: 'Droide',
-    description: 'Tu recois des missions pendant la partie. +2 victoire, -2 defaite, +1 si toutes les missions completees.',
-    objective: 'Gagner la game ET suivre toutes tes instructions',
+    description: 'Tu recois une nouvelle mission toutes les 5 min (max 4). +2 victoire, -2 defaite, +1 si toutes les missions completees.',
+    objective: 'Gagner la game ET completer toutes tes missions',
     color: '#44AAFF',
     points: 0
   },
